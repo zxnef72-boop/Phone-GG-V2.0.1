@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Subdomain Takeover — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">💀</span> Subdomain Takeover Checker</div>
+    <div class="page-subtitle">Cek CNAME & dangling DNS untuk 14 service (GitHub, Heroku, AWS, dll)</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Subdomains (satu per baris)</label>
+      <textarea name="takeover_subs" class="form-textarea" placeholder="sub1.target.com&#10;sub2.target.com&#10;sub3.target.com" rows="6">{{ takeover_input or '' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="💀 Check Takeover">💀 Check Takeover</button>
+  </form>
+</div>
+{% if takeover_error %}<div class="alert alert-error">{{ takeover_error }}</div>{% endif %}
+{% if takeover_result %}
+<div class="result-panel">
+  <div class="result-header">
+    <h3>{{ takeover_result.total_vulnerable }} vulnerable / {{ takeover_result.total_checked }} checked</h3>
+    <a href="/export" class="btn btn-ghost btn-sm">📥 Export</a>
+  </div>
+  <div class="result-body">
+    {% if takeover_result.vulnerable %}
+    <div class="alert alert-error">⚠️ Ditemukan {{ takeover_result.vulnerable|length }} subdomain yang rentan takeover!</div>
+    {% for v in takeover_result.vulnerable %}
+    <div class="card" style="margin-bottom:.5rem;border-color:var(--danger)">
+      <div style="font-weight:700;color:var(--danger)">{{ v.subdomain }}</div>
+      <div style="font-size:.85rem;color:var(--text-muted)">CNAME: {{ v.cname }} → {{ v.service }}</div>
+      <div style="font-size:.8rem;color:var(--warning)">Evidence: {{ v.evidence }}</div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="alert alert-info">Tidak ada subdomain rentan takeover ditemukan.</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

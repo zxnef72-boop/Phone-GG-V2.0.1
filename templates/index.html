@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}PhoneGG OSINT — Developer NefZx{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/index.css">
+{% endblock %}
+{% block content %}
+<div class="dashboard-page">
+
+  <!-- Hero -->
+  <section class="dashboard-hero">
+    <div class="hero-content">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-light text-dark"><i class="fa-solid fa-shield-halved me-1"></i> v2.0</span>
+        <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> Online</span>
+      </div>
+      <h1><i class="fa-solid fa-magnifying-glass me-2"></i>PhoneGG OSINT</h1>
+      <p class="lead mb-4" style="opacity:0.85; font-size: 0.95rem;">Developer NefZx</p>
+      <p class="lead mb-4">
+        All-in-one reconnaissance platform untuk phone, email, username, domain, dan web target.
+        <strong>23 modul intelijen</strong> dalam satu aplikasi.
+      </p>
+      <div class="d-flex flex-wrap gap-3">
+        <div class="stat-pill">
+          <div class="stat-value">23</div>
+          <div class="stat-label">Modul</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-value">60+</div>
+          <div class="stat-label">Platform</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-value">17</div>
+          <div class="stat-label">API</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-value"><i class="fa-solid fa-mobile-screen-button"></i></div>
+          <div class="stat-label">PWA Ready</div>
+        </div>
+      </div>
+      <div class="mt-4">
+        <a href="https://www.tiktok.com/@anzendaiich1?_r=1&_t=ZS-98n8dtz4v2a" target="_blank" rel="noopener noreferrer" class="contact-btn">
+          <i class="fa-brands fa-tiktok me-2"></i>Contact Us
+        </a>
+        <div style="margin-top: 1rem; padding: 0.5rem; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+          <strong>🤖 AI Native Engine (Credit: NEFZX)</strong> - 100% Offline & Independent
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OSINT Section -->
+  <div class="section-title"><i class="fa-solid fa-user-secret"></i> OSINT Intelligence</div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/phone" class="module-card accent-blue">
+        <div class="icon-wrap"><i class="fa-solid fa-mobile-screen"></i></div>
+        <h3>Phone Lookup</h3>
+        <p>Validasi nomor ID, cek WhatsApp, operator, Google dork</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/email" class="module-card accent-green">
+        <div class="icon-wrap"><i class="fa-solid fa-envelope"></i></div>
+        <h3>Email Lookup</h3>
+        <p>HIBP, Gravatar, domain WHOIS+DNS, email reputation</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/username" class="module-card accent-purple">
+        <div class="icon-wrap"><i class="fa-solid fa-user"></i></div>
+        <h3>Username Search</h3>
+        <p>60+ platform social media check</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/dork" class="module-card accent-cyan">
+        <div class="icon-wrap"><i class="fa-solid fa-search"></i></div>
+        <h3>Dork Generator</h3>
+        <p>30+ Google/Bing/DDG dork templates</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/breach" class="module-card accent-red">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-unlock"></i></div>
+        <h3>Breach Search</h3>
+        <p>HIBP + BreachDirectory + IntelX + Dehashed</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/ipinfo" class="module-card accent-orange">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-location-dot"></i></div>
+        <h3>IP Geolocation</h3>
+        <p>ASN, ISP, proxy detection via ip-api + ipinfo</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/metadata" class="module-card accent-pink">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-camera"></i></div>
+        <h3>Metadata Extractor</h3>
+        <p>EXIF/GPS dari gambar, PDF metadata</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/phone-graph" class="module-card accent-blue">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-diagram-project"></i></div>
+        <h3>Phone Graph</h3>
+        <p>Visualisasi relasi & jaringan nomor telepon</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- Web Recon Section -->
+  <div class="section-title"><i class="fa-solid fa-globe"></i> Web Reconnaissance</div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/subdomain" class="module-card accent-teal">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-sitemap"></i></div>
+        <h3>Subdomain Enum</h3>
+        <p>crt.sh + DNS brute-force + search dorks</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/dir" class="module-card accent-indigo">
+        <div class="icon-wrap"><i class="fa-solid fa-folder-open"></i></div>
+        <h3>Dir Enumeration</h3>
+        <p>150+ path umum dengan risk categorization</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/portscan" class="module-card accent-sky">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-network-wired"></i></div>
+        <h3>Port Scanner</h3>
+        <p>TCP scan 50-100+ common ports</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/cors" class="module-card accent-violet">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-shield-virus"></i></div>
+        <h3>CORS Checker</h3>
+        <p>Misconfiguration detection (wildcard, null)</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/takeover" class="module-card accent-rose">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-skull-crossbones"></i></div>
+        <h3>Subdomain Takeover</h3>
+        <p>CNAME + dangling DNS check (14 services)</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/vuln" class="module-card accent-amber">
+        <div class="icon-wrap"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3>Vuln Scanner</h3>
+        <p>Domain vulnerability scan (nuclei)</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/scam-check" class="module-card accent-red">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-user-shield"></i></div>
+        <h3>Scam Checker</h3>
+        <p>Cek reputasi & indikator penipuan sebuah situs</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/link-scraper" class="module-card accent-cyan">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-link-slash"></i></div>
+        <h3>Link Scraper</h3>
+        <p>Ekstrak link & script dari sebuah halaman web</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- Analysis Section -->
+  <div class="section-title"><i class="fa-solid fa-chart-line"></i> Analysis &amp; Forensics</div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/check404" class="module-card accent-lime">
+        <div class="icon-wrap"><i class="fa-solid fa-link"></i></div>
+        <h3>URL Status Check</h3>
+        <p>HTTP status, redirect chain, SSL info</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/security-headers" class="module-card accent-emerald">
+        <div class="icon-wrap"><i class="fa-solid fa-lock"></i></div>
+        <h3>Security Headers</h3>
+        <p>CSP, HSTS, X-Frame + skor &amp; grade A-F</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/tech-detect" class="module-card accent-fuchsia">
+        <div class="icon-wrap"><i class="fa-solid fa-gears"></i></div>
+        <h3>Tech Detect</h3>
+        <p>CMS, framework, CDN, analytics fingerprint</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/wayback" class="module-card accent-yellow">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <h3>Wayback Machine</h3>
+        <p>Historical snapshots via web.archive.org</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/origin-ip" class="module-card accent-teal">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-globe"></i></div>
+        <h3>Origin IP Finder</h3>
+        <p>Find real origin IP via DNS analysis & security APIs</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/header-detector" class="module-card accent-indigo">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-file-shield"></i></div>
+        <h3>Header Detector</h3>
+        <p>Analisis header HTTP mendalam sebuah situs</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- AI Analysis Section -->
+  <div class="section-title"><i class="fa-solid fa-brain"></i> AI Analysis</div>
+  <div class="row g-3 mb-2">
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/ai-analysis" class="module-card accent-purple">
+        <span class="badge-new">AI v2.0</span>
+        <div class="icon-wrap"><i class="fa-solid fa-robot"></i></div>
+        <h3>LynaeZx Chatbot v2.0</h3>
+        <p>Enhanced AI Engine (Smart Code Generation & Learning) - Credit: NEFZX</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/custom-ai" class="module-card accent-fuchsia">
+        <span class="badge-new">New</span>
+        <div class="icon-wrap"><i class="fa-solid fa-microchip"></i></div>
+        <h3>Custom AI Engine</h3>
+        <p>Analisis data custom dengan rules yang bisa diatur sendiri</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- API Section -->
+  <div class="section-title"><i class="fa-solid fa-code"></i> Developer</div>
+  <div class="row g-3 mb-2">
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/apidocs/" class="module-card accent-blue" target="_blank" rel="noopener">
+        <div class="icon-wrap"><i class="fa-solid fa-book"></i></div>
+        <h3>API Documentation</h3>
+        <p>17 REST endpoints dengan Swagger UI</p>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+      <a href="/export" class="module-card accent-green">
+        <div class="icon-wrap"><i class="fa-solid fa-file-export"></i></div>
+        <h3>Export Report</h3>
+        <p>Download hasil scan terakhir sebagai TXT</p>
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

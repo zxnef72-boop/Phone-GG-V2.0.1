@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Vulnerability Scanner — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🛡️</span> Vulnerability Scanner</div>
+    <div class="page-subtitle">Scan domain/URL untuk kerentanan umum via nuclei security scanner</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Domain atau URL</label>
+      <input name="vuln_target" class="form-input" placeholder="target.com atau https://target.com" value="{{ vuln_target or '' }}" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Minimum Severity</label>
+      <select name="severity" class="form-input">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+        <option value="critical">Critical</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🛡️ Scan Sekarang">🛡️ Scan Sekarang</button>
+  </form>
+</div>
+
+{% if vuln_error %}<div class="alert alert-error">{{ vuln_error }}</div>{% endif %}
+
+{% if vuln_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Hasil Scan — {{ vuln_result.target }}</h3></div>
+  <div class="result-body">
+    {% if vuln_result.error %}
+    <div class="alert alert-info">{{ vuln_result.error }}</div>
+    {% endif %}
+
+    {% if vuln_result.summary %}
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="value">{{ vuln_result.summary.total or 0 }}</div><div class="label">Total</div></div>
+      <div class="stat-tile" style="color:#ef4444"><div class="value">{{ vuln_result.summary.critical or 0 }}</div><div class="label">Critical</div></div>
+      <div class="stat-tile" style="color:#f97316"><div class="value">{{ vuln_result.summary.high or 0 }}</div><div class="label">High</div></div>
+      <div class="stat-tile" style="color:#f59e0b"><div class="value">{{ vuln_result.summary.medium or 0 }}</div><div class="label">Medium</div></div>
+      <div class="stat-tile" style="color:#10b981"><div class="value">{{ vuln_result.summary.low or 0 }}</div><div class="label">Low</div></div>
+      <div class="stat-tile"><div class="value">{{ vuln_result.summary.info or 0 }}</div><div class="label">Info</div></div>
+    </div>
+    {% endif %}
+
+    {% if vuln_result.findings %}
+    <h3 style="margin:1rem 0 .5rem;font-size:.9rem;color:var(--text-muted)">Findings</h3>
+    <div class="table-responsive"><table class="data-table">
+      <thead><tr><th>Nama</th><th>Severity</th><th>Template</th><th>Matched At</th></tr></thead>
+      <tbody>
+      {% for f in vuln_result.findings %}
+      <tr>
+        <td>{{ f.name }}</td>
+        <td>
+          <span class="badge" style="background:
+            {%- if f.severity == 'critical' -%}#ef4444
+            {%- elif f.severity == 'high' -%}#f97316
+            {%- elif f.severity == 'medium' -%}#f59e0b
+            {%- elif f.severity == 'low' -%}#10b981
+            {%- else -%}#64748b{%- endif -%};color:#fff">{{ f.severity }}</span>
+        </td>
+        <td style="font-size:.8rem;color:var(--text-secondary)">{{ f.template }}</td>
+        <td style="word-break:break-all;font-size:.8rem">{{ f.matched_at }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% elif not vuln_result.error %}
+    <div class="alert alert-info">Tidak ada kerentanan ditemukan pada severity yang dipilih.</div>
+    {% endif %}
+
+    <h3 style="margin:1rem 0 .5rem;font-size:.9rem;color:var(--text-muted)">Full Details</h3>
+    <div class="json-view">{{ vuln_result | tojson(indent=2) }}</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

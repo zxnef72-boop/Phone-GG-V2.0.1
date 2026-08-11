@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}AIZX Email Lookup — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">📧</span> AIZX Email Lookup</div>
+    <div class="page-subtitle">HIBP breach check, Gravatar, domain WHOIS+DNS, & dork links</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <input name="email" class="form-input" type="email" placeholder="target@example.com" value="{{ email or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="📧 Cek Email">📧 Cek Email</button>
+  </form>
+</div>
+{% if email_error %}<div class="alert alert-error">{{ email_error }}</div>{% endif %}
+{% if email_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Hasil: {{ email_result.email }}</h3>
+    <a href="/export" class="btn btn-ghost btn-sm">📥 Export</a>
+  </div>
+  <div class="result-body">
+    <div class="stat-grid">
+      <div class="stat-tile {% if email_result.hibp and email_result.hibp.breached %}danger{% else %}success{% endif %}">
+        <div class="value">{% if email_result.hibp and email_result.hibp.breached %}BREACHED{% elif email_result.hibp and email_result.hibp.breached == False %}SAFE{% else %}?{% endif %}</div>
+        <div class="label">HIBP Status</div>
+      </div>
+      <div class="stat-tile"><div class="value">{{ email_result.links|length }}</div><div class="label">Dork Links</div></div>
+      <div class="stat-tile"><div class="value">{{ 'Yes' if email_result.gravatar else 'No' }}</div><div class="label">Gravatar</div></div>
+      <div class="stat-tile"><div class="value">{{ email_result.domain_info.email_provider if email_result.domain_info else 'N/A' }}</div><div class="label">Email Provider</div></div>
+    </div>
+    {% if email_result.gravatar %}
+    <div style="margin-bottom:1rem"><img src="{{ email_result.gravatar }}" alt="Gravatar" style="border-radius:50%;width:64px;height:64px;border:2px solid var(--border-light)"></div>
+    {% endif %}
+    {% if email_result.reputation and email_result.reputation.status == 'success' %}
+    <div class="alert alert-{% if email_result.reputation.suspicious %}warning{% else %}info{% endif %}" style="margin-bottom:1rem">
+      {{ email_result.reputation.reputation }}
+      {% if email_result.reputation.disposable %}<span class="badge badge-high">disposable</span>{% endif %}
+    </div>
+    {% endif %}
+    <h3 style="margin-bottom:.5rem;font-size:.9rem;color:var(--text-muted)">Dork Links</h3>
+    <ul class="link-list">
+      {% for label, url in email_result.links.items() %}
+      <li><a href="{{ url }}" target="_blank" rel="noopener"><span class="label">{{ label }}</span>{{ url[:80] }}{% if url|length > 80 %}...{% endif %}</a></li>
+      {% endfor %}
+    </ul>
+    {% if email_result.domain_info %}
+    <h3 style="margin:1.5rem 0 .5rem;font-size:.9rem;color:var(--text-muted)">Domain Info</h3>
+    <div class="json-view">{{ email_result.domain_info | tojson(indent=2) }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

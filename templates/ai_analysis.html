@@ -1,0 +1,786 @@
+{% extends "base.html" %}
+{% block title %}LynaeZx Chatbot — PhoneGG{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+  /* Base Container & Cards */
+  .lz-chat-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .lz-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+
+  /* Header Section */
+  .lz-chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+
+  .lz-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .lz-brand-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-light);
+  }
+
+  .lz-brand-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .lz-brand-subtitle {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+  }
+
+  .lz-header-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  /* Context & Capability Banners */
+  .lz-info-banner {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.85rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .lz-info-banner strong {
+    color: var(--accent);
+  }
+
+  #context-info {
+    display: none;
+    border-color: rgba(16, 185, 129, 0.3);
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  /* Messages Area */
+  #chat-messages {
+    min-height: 380px;
+    max-height: 520px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    scroll-behavior: smooth;
+  }
+
+  /* Message Bubbles */
+  .lz-msg {
+    display: flex;
+    gap: 0.75rem;
+    animation: lz-fade-in 0.2s ease-out;
+  }
+
+  .lz-msg.lz-user {
+    flex-direction: row-reverse;
+  }
+
+  @keyframes lz-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .lz-avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .lz-avatar-user {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .lz-bubble {
+    max-width: 80%;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm);
+    line-height: 1.6;
+    font-size: 0.88rem;
+  }
+
+  .lz-user .lz-bubble {
+    background: var(--accent-light);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: var(--text-primary);
+  }
+
+  .lz-bot .lz-bubble {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+  }
+
+  .lz-bot .lz-bubble.lz-error {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+  }
+
+  .lz-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .lz-meta strong {
+    color: var(--text-primary);
+  }
+
+  /* Code Block Styling */
+  .lz-code-wrap {
+    margin: 0.75rem 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .lz-code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .lz-code-wrap pre {
+    margin: 0 !important;
+    padding: 0.85rem !important;
+    background: #090d16 !important;
+    font-size: 0.82rem !important;
+  }
+
+  .lz-copy-btn {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .lz-copy-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .lz-copy-btn.copied {
+    border-color: var(--success);
+    color: var(--success);
+  }
+
+  /* Input Section */
+  .lz-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .lz-textarea {
+    flex: 1;
+    min-height: 52px;
+    max-height: 150px;
+    resize: vertical;
+  }
+
+  .lz-send-btn {
+    height: auto;
+    padding: 0 1.5rem;
+  }
+
+  /* Quick Actions & Templates */
+  .lz-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 1rem;
+  }
+
+  .lz-chip {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .lz-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .lz-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+  }
+
+  .lz-template-item {
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+  }
+
+  .lz-template-item strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+
+  .lz-badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  .lz-regen-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    cursor: pointer;
+    margin-left: auto;
+  }
+
+  .lz-regen-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .lz-cursor::after {
+    content: '▋';
+    display: inline-block;
+    animation: lz-blink 0.8s step-start infinite;
+    color: var(--accent);
+    margin-left: 2px;
+  }
+
+  @keyframes lz-blink { 50% { opacity: 0; } }
+
+  .lz-status-indicator {
+    padding: 0.6rem 0.85rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <div class="page-title">
+      <img src="/static/images/lynaezx-avatar.jpg" alt="LynaeZx" style="width:1.4rem;height:1.4rem;border-radius:50%;object-fit:cover;">
+      LynaeZx Chatbot v2.0
+    </div>
+    <div class="page-subtitle">Modul Asisten AI & Analisis Teknis PhoneGG</div>
+  </div>
+</div>
+
+<div class="lz-chat-wrapper">
+  <div class="lz-card">
+    
+    <!-- Top Bar Header -->
+    <div class="lz-chat-header">
+      <div class="lz-brand">
+        <img src="/static/images/lynaezx-avatar.jpg" alt="LynaeZx" class="lz-brand-avatar">
+        <div>
+          <div class="lz-brand-title">LynaeZx AI Assistant</div>
+          <div class="lz-brand-subtitle">Engine Offline & Mandiri — Credit: NEFZX</div>
+        </div>
+      </div>
+      <div class="lz-header-actions">
+        <button onclick="exportChat()" class="btn btn-ghost btn-sm">Export Chat</button>
+        <button onclick="clearChat()" class="btn btn-ghost btn-sm">Bersihkan Chat</button>
+      </div>
+    </div>
+    
+    <!-- Capability Info Banner -->
+    <div class="lz-info-banner">
+      <strong>Kapabilitas Utama:</strong> Analisis Keamanan Siber, Generasi Kode (Python, JS, Bash, PowerShell, C++, Go, Rust, Lua), Pembuatan Script Otomatisasi, dan Modul Bantuan PhoneGG.
+    </div>
+    
+    <!-- Active Context Banner -->
+    <div id="context-info" class="lz-info-banner">
+      Konteks Aktif: <span id="context-text">Tidak ada</span>
+    </div>
+    
+    <!-- Messages Display Container -->
+    <div id="chat-messages">
+      <div class="lz-msg lz-bot">
+        <img src="/static/images/lynaezx-avatar.jpg" alt="LynaeZx" class="lz-avatar">
+        <div class="lz-bubble">
+          <div class="lz-meta"><strong>LynaeZx System</strong></div>
+          <div class="chat-message-content">
+            <p><strong>Selamat datang di LynaeZx Chatbot v2.0</strong></p>
+            <p>Asisten AI untuk membantu analisis sistem, pemrograman, dan operasional modul PhoneGG. Modul dapat memproses instruksi berikut:</p>
+            <ul>
+              <li><strong>Analisis Keamanan Siber</strong> — Pemeriksaan kerentanan, rekomendasi konfigurasi aman, dan panduan keamanan.</li>
+              <li><strong>Generasi Kode Teknis</strong> — Pembuatan script terstruktur dalam berbagai bahasa pemrograman populer.</li>
+              <li><strong>Otomatisasi Script</strong> — Penulisan fungsi kustom dan utilitas sistem.</li>
+              <li><strong>Bantuan Modul PhoneGG</strong> — Panduan penggunaan fitur dan dokumentasi internal.</li>
+            </ul>
+            <p>Ketik perintah Anda secara langsung atau pilih opsi cepat yang tersedia di bawah.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Input Box Section -->
+    <div class="lz-input-wrapper">
+      <textarea id="chat-input" class="form-input lz-textarea" placeholder="Masukkan instruksi atau permintaan kode (Contoh: 'Buat port scanner dengan Python')..." rows="2"></textarea>
+      <button onclick="sendChatMessage()" class="btn btn-primary lz-send-btn">Kirim</button>
+    </div>
+    
+    <!-- Quick Action Chips -->
+    <div class="lz-quick-actions">
+      <button onclick="quickAction('Buat port scanner multi-threaded dengan Python')" class="lz-chip">Port Scanner (Python)</button>
+      <button onclick="quickAction('Generate web vulnerability scanner dengan Python')" class="lz-chip">Web Scanner (Python)</button>
+      <button onclick="quickAction('Buat XSS scanner dengan JavaScript')" class="lz-chip">XSS Scanner (JS)</button>
+      <button onclick="quickAction('Generate network monitoring script dengan Bash')" class="lz-chip">Network Monitor (Bash)</button>
+      <button onclick="quickAction('Jelaskan tentang SQL injection secara mendalam')" class="lz-chip">Analisis SQLi</button>
+      <button onclick="quickAction('Apa saja modul PhoneGG?')" class="lz-chip">Modul PhoneGG</button>
+      <button onclick="quickAction('Buat API client dengan Python')" class="lz-chip">API Client (Python)</button>
+    </div>
+    
+    <!-- Language Support Grid -->
+    <div style="margin-top: 1.25rem;">
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 600;">
+        Templat Bahasa yang Didukung:
+      </div>
+      <div class="lz-template-grid">
+        <div class="lz-template-item"><strong>Python</strong>Port Scanner, Web Scanner, API Client, Automation</div>
+        <div class="lz-template-item"><strong>JavaScript</strong>XSS Analyzer, DOM Security, Data Validator</div>
+        <div class="lz-template-item"><strong>Bash / Shell</strong>Log Analyzer, Network Monitor, System Script</div>
+        <div class="lz-template-item"><strong>Lainnya</strong>PowerShell, C++, Go, Rust, Lua</div>
+      </div>
+    </div>
+    
+  </div>
+
+  <!-- Android APK Export Box -->
+  <div style="text-align: center; margin-top: 1rem;">
+    <a href="/api/export-apk" class="btn btn-ghost btn-sm" style="color: var(--text-secondary);">
+      Download App Android PhoneGG (.apk)
+    </a>
+  </div>
+</div>
+
+<script>
+let analysisContext = null;
+let lastUserMessage = '';
+let lzCodeBlockCounter = 0;
+
+function parseMarkdown(text) {
+    const codeBlocks = [];
+    text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, lang, code) {
+        const language = lang || 'text';
+        const blockId = 'lz-code-' + (++lzCodeBlockCounter) + '-' + Date.now();
+        const html = `<div class="lz-code-wrap">
+            <div class="lz-code-header">
+                <span>${language}</span>
+                <button class="lz-copy-btn" onclick="copyCodeBlock('${blockId}', this)">Salin Kode</button>
+            </div>
+            <pre><code id="${blockId}" class="language-${language}">${escapeHtml(code.trim())}</code></pre>
+        </div>`;
+        const token = '\u0000CODEBLOCK' + codeBlocks.length + '\u0000';
+        codeBlocks.push(html);
+        return token;
+    });
+    
+    text = text.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.08); padding: 0.15rem 0.35rem; border-radius: 4px; font-family: var(--mono); font-size: 0.85em;">$1</code>');
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/^### (.*$)/gm, '<h3 style="font-size: 0.95rem; margin: 0.75rem 0 0.25rem 0; color: var(--text-primary);">$1</h3>');
+    text = text.replace(/^## (.*$)/gm, '<h2 style="font-size: 1.05rem; margin: 0.75rem 0 0.25rem 0; color: var(--text-primary);">$1</h2>');
+    text = text.replace(/^# (.*$)/gm, '<h1 style="font-size: 1.15rem; margin: 0.75rem 0 0.25rem 0; color: var(--text-primary);">$1</h1>');
+    text = text.replace(/^\• (.*$)/gm, '<li style="margin-left: 1rem;">$1</li>');
+    text = text.replace(/^\d+\. (.*$)/gm, '<li style="margin-left: 1rem;">$1</li>');
+    
+    text = text.replace(/\n\n/g, '</p><p>');
+    text = text.replace(/\n/g, '<br>');
+    
+    codeBlocks.forEach((html, i) => {
+        text = text.replace('\u0000CODEBLOCK' + i + '\u0000', html);
+    });
+    
+    return '<p>' + text + '</p>';
+}
+
+function highlightCodeBlocks(container) {
+    if (window.hljs) {
+        container.querySelectorAll('pre code').forEach(block => {
+            try { hljs.highlightElement(block); } catch (e) {}
+        });
+    }
+}
+
+function copyCodeBlock(blockId, btn) {
+    const codeEl = document.getElementById(blockId);
+    if (!codeEl) return;
+    const text = codeEl.textContent;
+
+    function markCopied() {
+        const original = btn.textContent;
+        btn.textContent = 'Tersalin';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(markCopied).catch(() => fallbackCopy(text, markCopied, btn));
+    } else {
+        fallbackCopy(text, markCopied, btn);
+    }
+}
+
+function fallbackCopy(text, onSuccess, btn) {
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const success = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (success) {
+            onSuccess();
+        } else {
+            btn.textContent = 'Gagal';
+        }
+    } catch (e) {
+        btn.textContent = 'Gagal';
+    }
+}
+
+function extractCreditBadge(text) {
+    const match = text.match(/\*\*Dijawab oleh:\*\* (.+?)$/m);
+    if (!match) return { cleanText: text, badgeHtml: '' };
+    const label = match[1].trim();
+    let color = 'var(--text-muted)';
+    if (/groq/i.test(label)) color = 'var(--success)';
+    else if (/gemini/i.test(label)) color = 'var(--accent)';
+    else if (/claude|anthropic/i.test(label)) color = 'var(--warning)';
+    
+    const cleanText = text.replace(match[0], '').trim();
+    const badgeHtml = `<span class="lz-badge" style="color:${color}; border-color:${color};">${escapeHtml(label)}</span>`;
+    return { cleanText, badgeHtml };
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function nowTime() {
+    return new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
+function saveHistory() {
+    try {
+        localStorage.setItem('lynaezx_chat_history', document.getElementById('chat-messages').innerHTML);
+    } catch (e) {}
+}
+
+function loadHistory() {
+    try {
+        const saved = localStorage.getItem('lynaezx_chat_history');
+        if (saved) {
+            document.getElementById('chat-messages').innerHTML = saved;
+            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+        }
+    } catch (e) {}
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    const chatMessages = document.getElementById('chat-messages');
+    lastUserMessage = message;
+    
+    chatMessages.innerHTML += `
+      <div class="lz-msg lz-user">
+        <div class="lz-avatar-user">User</div>
+        <div class="lz-bubble">
+          <div class="lz-meta"><strong>Anda</strong> <span class="lz-time">${nowTime()}</span></div>
+          <div class="chat-message-content">${escapeHtml(message)}</div>
+        </div>
+      </div>
+    `;
+    saveHistory();
+    
+    input.value = '';
+    fetchAndRenderReply(message);
+}
+
+function regenerateResponse(btn) {
+    if (!lastUserMessage) return;
+    const bubble = btn.closest('.lz-msg');
+    if (bubble) bubble.remove();
+    saveHistory();
+    fetchAndRenderReply(lastUserMessage);
+}
+
+function typeWriterReveal(container, fullText, onDone) {
+    const total = fullText.length;
+    const chunk = Math.max(3, Math.ceil(total / 140));
+    let i = 0;
+    container.classList.add('lz-cursor');
+    function step() {
+        i += chunk;
+        const partial = fullText.slice(0, i);
+        container.innerHTML = parseMarkdown(partial);
+        highlightCodeBlocks(container);
+        const chatMessages = document.getElementById('chat-messages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        if (i < total) {
+            setTimeout(step, 12);
+        } else {
+            container.classList.remove('lz-cursor');
+            container.innerHTML = parseMarkdown(fullText);
+            highlightCodeBlocks(container);
+            if (onDone) onDone();
+        }
+    }
+    step();
+}
+
+function fetchAndRenderReply(message) {
+    const chatMessages = document.getElementById('chat-messages');
+    const typingId = 'typing-' + Date.now();
+    
+    chatMessages.innerHTML += `
+      <div id="${typingId}" class="lz-status-indicator">
+        <span>Memproses respons...</span>
+      </div>
+    `;
+    
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    fetch('/api/ai-chatbot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            message: message,
+            analysis_context: analysisContext
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const typingElement = document.getElementById(typingId);
+        if (typingElement) typingElement.remove();
+        
+        const actualData = data.data || data;
+        const responseText = actualData.response || actualData.message || actualData.reply;
+        
+        if (data.status === 'success' && responseText) {
+            const isError = actualData.error !== undefined;
+            const bubbleClass = isError ? 'lz-bubble lz-error' : 'lz-bubble';
+            const title = isError ? 'System Alert' : 'LynaeZx';
+            const { cleanText, badgeHtml } = extractCreditBadge(responseText);
+            const contentId = 'lz-content-' + Date.now();
+            
+            chatMessages.innerHTML += `
+              <div class="lz-msg lz-bot">
+                <img src="/static/images/lynaezx-avatar.jpg" alt="LynaeZx" class="lz-avatar">
+                <div class="${bubbleClass}">
+                  <div class="lz-meta">
+                    <strong>${title}</strong> <span class="lz-time">${nowTime()}</span> ${badgeHtml}
+                    ${!isError ? `<button class="lz-regen-btn" onclick="regenerateResponse(this)">Ulangi</button>` : ''}
+                  </div>
+                  <div class="chat-message-content" id="${contentId}"></div>
+                </div>
+              </div>
+            `;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            typeWriterReveal(document.getElementById(contentId), cleanText, saveHistory);
+            
+            if (actualData.analysis_context) {
+                analysisContext = actualData.analysis_context;
+                updateContextInfo('Konteks analisis dimuat');
+            }
+            updateContextInfoFromMessage(message);
+        } else {
+            chatMessages.innerHTML += `
+              <div class="lz-status-indicator" style="border-color: var(--danger); color: var(--danger);">
+                Gagal memproses instruksi: ${data.error || data.message || 'Tidak ada respons dari server'}
+              </div>
+            `;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            saveHistory();
+        }
+    })
+    .catch(error => {
+        const typingElement = document.getElementById(typingId);
+        if (typingElement) typingElement.remove();
+        
+        chatMessages.innerHTML += `
+          <div class="lz-status-indicator" style="border-color: var(--danger); color: var(--danger);">
+            Kesalahan jaringan/server: ${error.message || 'Koneksi terputus'}
+          </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        saveHistory();
+    });
+}
+
+function exportChat() {
+    const chatMessages = document.getElementById('chat-messages');
+    const bubbles = chatMessages.querySelectorAll('.lz-msg');
+    let out = `Riwayat Percakapan LynaeZx — ${new Date().toLocaleString('id-ID')}\n`;
+    out += '='.repeat(50) + '\n\n';
+    bubbles.forEach(b => {
+        const isUser = b.classList.contains('lz-user');
+        const nameEl = b.querySelector('.lz-meta strong');
+        const contentEl = b.querySelector('.chat-message-content');
+        const name = nameEl ? nameEl.textContent : (isUser ? 'Anda' : 'LynaeZx');
+        const text = contentEl ? contentEl.innerText.trim() : '';
+        out += `[${name}]\n${text}\n\n`;
+    });
+    const blob = new Blob([out], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lynaezx-chat-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function quickAction(message) {
+    document.getElementById('chat-input').value = message;
+    sendChatMessage();
+}
+
+function clearChat() {
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.innerHTML = `
+      <div class="lz-msg lz-bot">
+        <img src="/static/images/lynaezx-avatar.jpg" alt="LynaeZx" class="lz-avatar">
+        <div class="lz-bubble">
+          <div class="lz-meta"><strong>LynaeZx System</strong> <span class="lz-time">${nowTime()}</span></div>
+          <div class="chat-message-content">
+            <p><strong>Riwayat chat telah dibersihkan.</strong></p>
+            <p>Silakan masukkan pertanyaan atau pilih salah satu instruksi cepat untuk memulai kembali.</p>
+          </div>
+        </div>
+      </div>
+    `;
+    analysisContext = null;
+    try { localStorage.removeItem('lynaezx_chat_history'); } catch (e) {}
+}
+
+document.addEventListener('DOMContentLoaded', loadHistory);
+
+document.getElementById('chat-input').addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+        sendChatMessage();
+    }
+});
+
+function updateContextInfo(text) {
+    const contextInfo = document.getElementById('context-info');
+    const contextText = document.getElementById('context-text');
+    if (contextInfo && contextText) {
+        contextInfo.style.display = 'block';
+        contextText.textContent = text;
+    }
+}
+
+function updateContextInfoFromMessage(message) {
+    const contextInfo = document.getElementById('context-info');
+    const contextText = document.getElementById('context-text');
+    if (!contextInfo || !contextText) return;
+    
+    const messageLower = message.toLowerCase();
+    let contextText_content = 'Percakapan Umum';
+    
+    if (messageLower.includes('python')) contextText_content = 'Pemrograman Python';
+    else if (messageLower.includes('javascript') || messageLower.includes('js')) contextText_content = 'Pemrograman JavaScript';
+    else if (messageLower.includes('bash') || messageLower.includes('shell')) contextText_content = 'Scripting Bash';
+    else if (messageLower.includes('powershell')) contextText_content = 'Scripting PowerShell';
+    else if (messageLower.includes('security') || messageLower.includes('keamanan')) contextText_content = 'Analisis Keamanan';
+    else if (messageLower.includes('sql')) contextText_content = 'Analisis SQL Injection';
+    else if (messageLower.includes('xss')) contextText_content = 'Analisis XSS';
+    else if (messageLower.includes('phonegg')) contextText_content = 'Modul PhoneGG';
+    
+    contextInfo.style.display = 'block';
+    contextText.textContent = contextText_content;
+}
+</script>
+{% endblock %}

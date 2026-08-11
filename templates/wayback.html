@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Wayback Machine Lookup — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🕰️</span> Wayback Machine Lookup</div>
+    <div class="page-subtitle">Cari snapshot historis URL/domain via web.archive.org — lihat versi lama halaman & endpoint yang sudah dihapus</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">URL atau Domain</label>
+      <input name="wb_target" class="form-input" placeholder="example.com atau https://example.com/page" value="{{ wb_target or '' }}" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mode</label>
+      <select name="wb_mode" class="form-input">
+        <option value="snapshots">Snapshots URL spesifik</option>
+        <option value="all_urls">Semua URL yang pernah di-crawl untuk domain ini</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🕰️ Cari Snapshot">🕰️ Cari Snapshot</button>
+  </form>
+</div>
+
+{% if wb_error %}<div class="alert alert-error">{{ wb_error }}</div>{% endif %}
+
+{% if wb_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Result — {{ wb_result.url or wb_result.domain or wb_target }}</h3></div>
+  <div class="result-body">
+    {% if wb_result.error %}
+    <div class="alert alert-error">{{ wb_result.error }}</div>
+    {% endif %}
+
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="value">{{ wb_result.total or 0 }}</div><div class="label">Total Ditemukan</div></div>
+    </div>
+
+    {% if wb_result.snapshots %}
+      {% if wb_result.snapshots|length == 0 %}
+      <div class="alert alert-info">Tidak ada snapshot ditemukan untuk URL ini.</div>
+      {% else %}
+      <h3 style="margin:1rem 0 .5rem;font-size:.9rem;color:var(--text-muted)">Snapshots</h3>
+      <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>Tanggal</th><th>Status</th><th>Link Arsip</th></tr></thead>
+        <tbody>
+        {% for snap in wb_result.snapshots %}
+        <tr>
+          <td>{{ snap.formatted_date or snap.timestamp or '-' }}</td>
+          <td>{{ snap.statuscode or '-' }}</td>
+          <td><a href="{{ snap.wayback_url }}" target="_blank" rel="noopener">Buka Arsip ↗</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% endif %}
+    {% endif %}
+
+    {% if wb_result.urls %}
+      {% if wb_result.urls|length == 0 %}
+      <div class="alert alert-info">Tidak ada URL ter-arsip untuk domain ini.</div>
+      {% else %}
+      <h3 style="margin:1rem 0 .5rem;font-size:.9rem;color:var(--text-muted)">URL Ter-arsip ({{ wb_result.urls|length }})</h3>
+      <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>URL</th><th>Pertama Terlihat</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for u in wb_result.urls %}
+        <tr>
+          <td style="word-break:break-all">{{ u.url }}</td>
+          <td>{{ u.first_seen or '-' }}</td>
+          <td>{{ u.status or '-' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% endif %}
+    {% endif %}
+
+    <h3 style="margin:1rem 0 .5rem;font-size:.9rem;color:var(--text-muted)">Full Details</h3>
+    <div class="json-view">{{ wb_result | tojson(indent=2) }}</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

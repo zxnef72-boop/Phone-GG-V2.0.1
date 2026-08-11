@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}AIZX Phone Lookup — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">📱</span> AIZX Phone Lookup</div>
+    <div class="page-subtitle">Validasi nomor Indonesia, cek WhatsApp, operator, & generate dork links</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Nomor Telepon</label>
+      <input name="phone" class="form-input" placeholder="08123456789 atau 628123456789" value="{{ phone or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🔍 Cek Nomor">🔍 Cek Nomor</button>
+  </form>
+</div>
+{% if phone_error %}<div class="alert alert-error">{{ phone_error }}</div>{% endif %}
+{% if phone_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Hasil: {{ phone_result.number }}</h3></div>
+  <div class="result-body">
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="value">{{ phone_result.operator }}</div><div class="label">Operator</div></div>
+      <div class="stat-tile"><div class="value">{{ phone_result.country }}</div><div class="label">Country</div></div>
+      <div class="stat-tile"><div class="value">{{ phone_result.prefix }}</div><div class="label">Prefix</div></div>
+      <div class="stat-tile"><div class="value">{{ phone_result.wa_status.status if phone_result.wa_status else 'N/A' }}</div><div class="label">WhatsApp</div></div>
+    </div>
+    
+    <!-- AI Risk Badge -->
+    {% if phone_result.ml_risk_prediction %}
+    <div class="ai-risk-section" style="margin: 1.5rem 0; padding: 1rem; border-radius: 0.5rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1)); border: 1px solid rgba(139, 92, 246, 0.3);">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="font-size: 1.5rem;">🤖</span>
+          <div>
+            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">AIZX AI Risk Analysis</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">AI Native Engine Risk Prediction (Credit: NEFZX)</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="text-align: right;">
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Risk Level</div>
+            <div style="font-weight: 700; font-size: 1rem;">
+              {% if phone_result.ml_risk_prediction.risk_level == 'High Risk' %}
+                <span style="color: #ef4444;">{{ phone_result.ml_risk_prediction.risk_level }}</span>
+              {% elif phone_result.ml_risk_prediction.risk_level == 'Medium Risk' %}
+                <span style="color: #f59e0b;">{{ phone_result.ml_risk_prediction.risk_level }}</span>
+              {% else %}
+                <span style="color: #10b981;">{{ phone_result.ml_risk_prediction.risk_level }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div style="min-width: 60px; padding: 0.5rem 1rem; border-radius: 999px; text-align: center; font-weight: 700; 
+            {% if phone_result.ml_risk_prediction.risk_score >= 70 %}
+              background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4);
+            {% elif phone_result.ml_risk_prediction.risk_score >= 40 %}
+              background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);
+            {% else %}
+              background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);
+            {% endif %}">
+            {{ phone_result.ml_risk_prediction.risk_score }}%
+          </div>
+        </div>
+      </div>
+      {% if phone_result.ml_risk_prediction.get('confidence') %}
+      <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-secondary);">
+        Confidence: {{ phone_result.ml_risk_prediction.get('confidence', 0) }}% | 
+        Probabilities: Low: {{ phone_result.ml_risk_prediction.get('probabilities', {}).get('low', 0) }}%, Medium: {{ phone_result.ml_risk_prediction.get('probabilities', {}).get('medium', 0) }}%, High: {{ phone_result.ml_risk_prediction.get('probabilities', {}).get('high', 0) }}%
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if phone_result.wa_status and phone_result.wa_status.note %}
+    <div class="alert alert-info" style="margin-bottom:1rem">{{ phone_result.wa_status.note }}</div>
+    {% endif %}
+    <h3 style="margin-bottom:.5rem;font-size:.9rem;color:var(--text-muted)">Dork Links ({{ phone_result.links|length }})</h3>
+    <ul class="link-list">
+      {% for label, url in phone_result.links.items() %}
+      <li><a href="{{ url }}" target="_blank" rel="noopener"><span class="label">{{ label }}</span>{{ url[:80] }}{% if url|length > 80 %}...{% endif %}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Header Detector — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🔍</span> HTTP Header & Tech Detector</div>
+    <div class="page-subtitle">Analisis header HTTP dan deteksi teknologi web sederhana</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">URL</label>
+      <input name="hd_target" class="form-input" placeholder="https://target.com" value="{{ hd_target or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🔍 Analyze">🔍 Analyze Headers</button>
+  </form>
+</div>
+{% if hd_error %}<div class="alert alert-error">{{ hd_error }}</div>{% endif %}
+{% if hd_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Header Analysis</h3></div>
+  <div class="result-body">
+    {% if hd_result.error %}
+    <div class="alert alert-error">{{ hd_result.error }}</div>
+    {% else %}
+    <div class="stat-tile" style="margin-bottom:1rem"><div class="value">{{ hd_result.status_code }}</div><div class="label">Status Code ({{ hd_result.status_category }})</div></div>
+    
+    <div style="margin-bottom:1rem">
+      <h3 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">Detected Technologies</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+        {% if hd_result.detected_technologies %}
+          {% for tech in hd_result.detected_technologies %}<span class="badge badge-found">{{ tech }}</span>{% endfor %}
+        {% else %}
+          <span class="badge badge-info">Tidak ada teknologi terdeteksi</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="margin-bottom:1rem">
+      <h3 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">Important Headers ({{ hd_result.important_headers|length }})</h3>
+      <div class="code-block">
+        {% for header, value in hd_result.important_headers.items() %}
+        <div style="margin-bottom:0.3rem"><span class="badge badge-info">{{ header }}</span>: {{ value }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="margin-bottom:1rem">
+      <h3 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">Security Headers ({{ hd_result.security_headers|length }})</h3>
+      <div class="code-block">
+        {% if hd_result.security_headers %}
+          {% for header, value in hd_result.security_headers.items() %}
+          <div style="margin-bottom:0.3rem"><span class="badge badge-success">{{ header }}</span>: {{ value }}</div>
+          {% endfor %}
+        {% else %}
+          <div style="color:var(--warning)">Tidak ada security header terdeteksi</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="margin-bottom:1rem">
+      <h3 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">Response Info</h3>
+      <div class="code-block">
+        <div>Final URL: {{ hd_result.final_url }}</div>
+        <div>Response Time: {{ hd_result.response_time_ms }}ms</div>
+        <div>Total Headers: {{ hd_result.total_headers }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

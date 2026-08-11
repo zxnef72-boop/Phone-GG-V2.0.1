@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Breach Search — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🔓</span> Breach Database Search</div>
+    <div class="page-subtitle">Cari email atau nomor HP di HIBP, BreachDirectory, IntelX, LeakCheck & Dehashed</div>
+  </div>
+</div>
+<div class="card">
+  <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+    <button type="button" class="btn {% if breach_type != 'phone' %}btn-primary{% else %}btn-ghost{% endif %} btn-sm" onclick="switchBreachTab('email')" id="tabEmailBtn">📧 Email</button>
+    <button type="button" class="btn {% if breach_type == 'phone' %}btn-primary{% else %}btn-ghost{% endif %} btn-sm" onclick="switchBreachTab('phone')" id="tabPhoneBtn">📱 Nomor HP</button>
+  </div>
+  <form method="POST">
+    <input type="hidden" name="breach_type" id="breachTypeInput" value="{{ breach_type or 'email' }}">
+    <div class="form-group" id="emailField" style="{% if breach_type == 'phone' %}display:none{% endif %}">
+      <label class="form-label">Email</label>
+      <input name="breach_email" class="form-input" type="email" placeholder="target@example.com" value="{{ breach_email or '' }}">
+    </div>
+    <div class="form-group" id="phoneField" style="{% if breach_type != 'phone' %}display:none{% endif %}">
+      <label class="form-label">Nomor HP</label>
+      <input name="breach_phone" class="form-input" type="text" placeholder="0812xxxxxxxx atau 62812xxxxxxxx" value="{{ breach_phone or '' }}">
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🔓 Search Breaches">🔓 Search Breaches</button>
+  </form>
+</div>
+<script>
+function switchBreachTab(type) {
+  document.getElementById('breachTypeInput').value = type;
+  document.getElementById('emailField').style.display = (type === 'email') ? '' : 'none';
+  document.getElementById('phoneField').style.display = (type === 'phone') ? '' : 'none';
+  document.getElementById('tabEmailBtn').className = 'btn btn-sm ' + (type === 'email' ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('tabPhoneBtn').className = 'btn btn-sm ' + (type === 'phone' ? 'btn-primary' : 'btn-ghost');
+}
+</script>
+{% if breach_error %}<div class="alert alert-error">{{ breach_error }}</div>{% endif %}
+{% if breach_result %}
+<div class="result-panel">
+  <div class="result-header">
+    <h3>Breach Report — {{ breach_result.email or breach_result.phone }}</h3>
+    <a href="/export" class="btn btn-ghost btn-sm">📥 Export</a>
+  </div>
+  <div class="result-body">
+    <div class="stat-grid">
+      <div class="stat-tile {% if breach_result.total_breaches > 0 %}danger{% else %}success{% endif %}">
+        <div class="value">{{ breach_result.total_breaches }}</div><div class="label">Total Breaches</div>
+      </div>
+    </div>
+    {% if breach_result.phone %}
+    <div class="alert alert-warning" style="margin-bottom:1rem">
+      Sumber untuk nomor HP di bawah ini berbasis link (perlu dicek manual satu-satu) karena HIBP/BreachDirectory publik cuma mendukung pencarian by-email, bukan by-phone.
+    </div>
+    {% endif %}
+    {% if breach_result.all_breaches %}
+    <h3 style="margin-bottom:.5rem;font-size:.9rem;color:var(--text-muted)">Breaches Found</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem">
+    {% for b in breach_result.all_breaches %}<span class="badge badge-high">{{ b }}</span>{% endfor %}
+    </div>
+    {% endif %}
+    <h3 style="margin-bottom:.5rem;font-size:.9rem;color:var(--text-muted)">Sources</h3>
+    {% for source, data in breach_result.sources.items() %}
+    <div class="card" style="margin-bottom:.5rem;padding:.75rem">
+      <div style="font-weight:600;margin-bottom:.25rem">{{ source }}</div>
+      {% if data.breached is not none %}
+        {% if data.breached %}<span class="badge badge-found">Breached ({{ data.count }})</span>
+        {% elif data.breached == false %}<span class="badge badge-found">Safe</span>
+        {% endif %}
+      {% elif data.error %}<span style="color:var(--warning);font-size:.8rem">{{ data.error }}</span>{% endif %}
+      {% if data.note %}<div style="color:var(--text-muted);font-size:.8rem;margin-top:.25rem">{{ data.note }}</div>{% endif %}
+      {% if data.url %}<div style="margin-top:.25rem"><a href="{{ data.url }}" target="_blank" style="color:var(--accent);font-size:.8rem">{{ data.url }}</a></div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Port Scanner — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🔌</span> Port Scanner</div>
+    <div class="page-subtitle">TCP connect scan untuk 50-100+ common ports dengan service detection</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Target (domain or IP)</label>
+      <input name="ps_target" class="form-input" placeholder="target.com atau 1.2.3.4" value="{{ ps_target or '' }}" required>
+    </div>
+    <div class="checkbox-group">
+      <label class="checkbox-label"><input type="checkbox" name="ps_extended"> 🔨 Extended mode (100+ ports)</label>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🔌 Scan Ports">🔌 Scan Ports</button>
+  </form>
+</div>
+{% if ps_error %}<div class="alert alert-error">{{ ps_error }}</div>{% endif %}
+{% if ps_result %}
+<div class="result-panel">
+  <div class="result-header">
+    <h3>{{ ps_result.total_open }} open / {{ ps_result.total_scanned }} scanned</h3>
+    <a href="/export" class="btn btn-ghost btn-sm">📥 Export</a>
+  </div>
+  <div class="result-body">
+    {% if ps_result.error %}
+    <div class="alert alert-error">{{ ps_result.error }}</div>
+    {% else %}
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="value">{{ ps_result.host }}</div><div class="label">Host</div></div>
+      <div class="stat-tile"><div class="value">{{ ps_result.ip }}</div><div class="label">IP</div></div>
+      <div class="stat-tile success"><div class="value">{{ ps_result.total_open }}</div><div class="label">Open</div></div>
+      <div class="stat-tile"><div class="value">{{ ps_result.total_scanned }}</div><div class="label">Scanned</div></div>
+    </div>
+    {% if ps_result.open_ports %}
+    <div class="table-responsive"><table class="data-table">
+      <thead><tr><th>Port</th><th>Service</th><th>State</th></tr></thead>
+      <tbody>
+      {% for p in ps_result.open_ports %}
+      <tr>
+        <td style="font-weight:700;color:var(--accent)">{{ p.port }}</td>
+        <td>{{ p.service }}</td>
+        <td><span class="badge badge-open">Open</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+    <div class="alert alert-info">Tidak ada port terbuka ditemukan.</div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

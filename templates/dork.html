@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Dork Generator — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🔎</span> Dork Generator</div>
+    <div class="page-subtitle">Generate Google/Bing/DuckDuckGo dork links untuk phone & email</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select name="dork_type" class="form-select">
+          <option value="phone" {% if dork_type == 'phone' %}selected{% endif %}>Phone Number</option>
+          <option value="email" {% if dork_type == 'email' %}selected{% endif %}>Email Address</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:2">
+        <label class="form-label">Target</label>
+        <input name="dork_target" class="form-input" placeholder="08xxx or email@domain.com" value="{{ dork_target or '' }}" required>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🔎 Generate Dorks">🔎 Generate Dorks</button>
+  </form>
+</div>
+{% if dork_error %}<div class="alert alert-error">{{ dork_error }}</div>{% endif %}
+{% if dork_result %}
+<div class="result-panel">
+  <div class="result-header">
+    <h3>Dork Links — {{ dork_result.target }} ({{ dork_result.type }})</h3>
+    <span style="font-size:.85rem;color:var(--text-muted)">{{ dork_result.links|length }} queries</span>
+  </div>
+  <div class="result-body">
+    <ul class="link-list">
+      {% for label, url in dork_result.links.items() %}
+      <li><a href="{{ url }}" target="_blank" rel="noopener"><span class="label">{{ label }}</span>{{ url[:80] }}{% if url|length > 80 %}...{% endif %}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

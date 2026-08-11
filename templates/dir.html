@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Dir Enumeration — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">📂</span> Directory Enumeration</div>
+    <div class="page-subtitle">Scan 150+ path umum dengan risk categorization & soft-404 detection</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Target URL</label>
+      <input name="dir_target" class="form-input" placeholder="https://target.com" value="{{ dir_target or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="📂 Scan">📂 Scan Directories</button>
+  </form>
+</div>
+{% if dir_error %}<div class="alert alert-error">{{ dir_error }}</div>{% endif %}
+{% if dir_result %}
+<div class="result-panel">
+  <div class="result-header">
+    <h3>{{ dir_result.found|length }} paths found ({{ dir_result.total }} checked)</h3>
+    <a href="/export" class="btn btn-ghost btn-sm">📥 Export</a>
+  </div>
+  <div class="result-body" style="padding:0">
+    <div class="table-responsive"><table class="data-table">
+      <thead><tr><th>Status</th><th>Path</th><th>Risk</th><th>Size</th></tr></thead>
+      <tbody>
+      {% for item in dir_result.found %}
+      <tr>
+        <td><span class="badge badge-{% if item.status == 200 %}found{% elif item.status in (401,403) %}medium{% else %}info{% endif %}">{{ item.status }}</span></td>
+        <td><a href="{{ item.url }}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">{{ item.path }}</a></td>
+        <td><span class="badge badge-{{ item.risk }}">{{ item.risk }}</span></td>
+        <td style="color:var(--text-muted)">{{ item.size }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

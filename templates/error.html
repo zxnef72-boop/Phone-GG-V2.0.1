@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }} — PhoneGG{% endblock %}
+{% block content %}
+<div style="text-align:center;padding:3rem 1rem">
+  <div style="font-size:4rem;margin-bottom:1rem">⚠️</div>
+  <h1 style="font-size:2rem;color:var(--danger);margin-bottom:.5rem">Error {{ code }}</h1>
+  <p style="color:var(--text-secondary);margin-bottom:1.5rem">{{ message }}</p>
+  <a href="/" class="btn btn-primary">🏠 Back to Dashboard</a>
+</div>
+{% endblock %}

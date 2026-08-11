@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Scam / Site Checker — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🕵️</span> Scam / Site Reputation Checker</div>
+    <div class="page-subtitle">Cek umur domain, histori Wayback, SSL, & pola phishing sebelum kamu transaksi</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">URL / Domain</label>
+      <input name="sc_target" class="form-input" placeholder="tokoonline-diskon.com" value="{{ sc_target or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🕵️ Cek Sekarang">🕵️ Cek Sekarang</button>
+  </form>
+</div>
+
+{% if sc_error %}<div class="alert alert-error">{{ sc_error }}</div>{% endif %}
+
+{% if sc_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Hasil Analisis: {{ sc_result.hostname }}</h3></div>
+  <div class="result-body">
+    <div class="stat-grid">
+      <div class="stat-tile {% if sc_result.risk_score >= 60 %}danger{% elif sc_result.risk_score >= 30 %}warning{% else %}success{% endif %}">
+        <div class="value">{{ sc_result.risk_score }}/100</div><div class="label">Skor Risiko</div>
+      </div>
+      <div class="stat-tile"><div class="value">{{ sc_result.domain_age_days if sc_result.domain_age_days is not none else '—' }}</div><div class="label">Umur Domain (hari)</div></div>
+      <div class="stat-tile"><div class="value">{{ sc_result.wayback_snapshots or 0 }}</div><div class="label">Snapshot Wayback</div></div>
+    </div>
+
+    <div class="alert alert-{% if sc_result.risk_score >= 60 %}error{% elif sc_result.risk_score >= 30 %}warning{% else %}info{% endif %}">
+      <b>Level Risiko: {{ sc_result.risk_level }}</b><br>{{ sc_result.recommendation }}
+    </div>
+
+    {% if sc_result.reasons %}
+    <h4 style="margin-top:1rem">⚠️ Alasan / Tanda Mencurigakan</h4>
+    {% for r in sc_result.reasons %}
+    <div class="alert alert-warning" style="margin-bottom:.25rem">{{ r }}</div>
+    {% endfor %}
+    {% endif %}
+
+    {% if sc_result.positive_signals %}
+    <h4 style="margin-top:1rem">✅ Sinyal Positif</h4>
+    {% for p in sc_result.positive_signals %}
+    <div class="alert alert-success" style="margin-bottom:.25rem">{{ p }}</div>
+    {% endfor %}
+    {% endif %}
+
+    {% if sc_result.domain_info and sc_result.domain_info.whois %}
+    <h4 style="margin-top:1rem">📋 WHOIS</h4>
+    <div class="card" style="font-size:.85rem">
+      <div>Registrar: <b>{{ sc_result.domain_info.whois.registrar or '—' }}</b></div>
+      <div>Dibuat: <b>{{ sc_result.domain_info.whois.creation_date or '—' }}</b></div>
+      <div>Kadaluarsa: <b>{{ sc_result.domain_info.whois.expiration_date or '—' }}</b></div>
+      <div>Negara: <b>{{ sc_result.domain_info.whois.country or '—' }}</b></div>
+    </div>
+    {% endif %}
+
+    {% if sc_result.ssl %}
+    <h4 style="margin-top:1rem">🔒 SSL/TLS</h4>
+    <div class="card" style="font-size:.85rem">
+      <div>Valid: <b>{{ 'Ya' if sc_result.ssl.valid else 'Tidak' }}</b></div>
+      {% if sc_result.ssl.valid %}
+      <div>Penerbit: <b>{{ sc_result.ssl.issuer or '—' }}</b></div>
+      <div>Berlaku sampai: <b>{{ sc_result.ssl.expires or '—' }}</b></div>
+      {% else %}
+      <div>Error: <code>{{ sc_result.ssl.error }}</code></div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

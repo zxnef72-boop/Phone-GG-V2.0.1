@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Link Scraper — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🔗</span> Link & Script Scraper</div>
+    <div class="page-subtitle">Extract semua link dan script dari HTML, highlight link sensitif</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">URL</label>
+      <input name="ls_target" class="form-input" placeholder="https://target.com" value="{{ ls_target or '' }}" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Filter</label>
+      <select name="ls_category" class="form-input">
+        <option value="all" {% if ls_category == 'all' %}selected{% endif %}>Semua</option>
+        <option value="sensitive" {% if ls_category == 'sensitive' %}selected{% endif %}>Hanya Sensitif</option>
+        <option value="scripts" {% if ls_category == 'scripts' %}selected{% endif %}>Hanya Scripts</option>
+        <option value="links" {% if ls_category == 'links' %}selected{% endif %}>Hanya Links</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🔗 Extract">🔗 Extract Links</button>
+  </form>
+</div>
+{% if ls_error %}<div class="alert alert-error">{{ ls_error }}</div>{% endif %}
+{% if ls_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Link & Script Analysis</h3></div>
+  <div class="result-body">
+    {% if ls_result.error %}
+    <div class="alert alert-error">{{ ls_result.error }}</div>
+    {% else %}
+    {% if ls_result.summary %}
+    <div class="stat-tile" style="margin-bottom:1rem"><div class="value">{{ ls_result.summary.total_items }}</div><div class="label">Total Items ({{ ls_result.summary.total_sensitive }} sensitif)</div></div>
+    {% endif %}
+
+    {% if ls_result.scripts %}
+    <div style="margin-bottom:1rem">
+      <h3 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">Scripts ({{ ls_result.scripts.total }})</h3>
+      <div class="code-block" style="max-height:300px;overflow-y:auto">
+        {% for script in ls_result.scripts['items'] %}
+        <div style="margin-bottom:0.5rem;padding:0.5rem;background:var(--bg-muted);border-radius:4px">
+          <div style="word-break:break-all">{{ script.full_url }}</div>
+          {% if script.is_sensitive %}
+          <div style="margin-top:0.3rem">
+            {% for cat in script.categories %}<span class="badge badge-warning">{{ cat }}</span>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if ls_result.links %}
+    <div style="margin-bottom:1rem">
+      <h3 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">Links ({{ ls_result.links.total }})</h3>
+      <div class="code-block" style="max-height:300px;overflow-y:auto">
+        {% for link in ls_result.links['items'] %}
+        <div style="margin-bottom:0.5rem;padding:0.5rem;background:var(--bg-muted);border-radius:4px">
+          <div style="word-break:break-all">{{ link.full_url }}</div>
+          {% if link.is_sensitive %}
+          <div style="margin-top:0.3rem">
+            {% for cat in link.categories %}<span class="badge badge-warning">{{ cat }}</span>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if ls_result.total_sensitive is defined %}
+    <div style="margin-bottom:1rem">
+      <h3 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">Sensitive Items Only</h3>
+      <div class="code-block" style="max-height:300px;overflow-y:auto">
+        {% if ls_result.scripts %}
+          {% for script in ls_result.scripts['items'] %}
+            {% if script.is_sensitive %}
+            <div style="margin-bottom:0.5rem;padding:0.5rem;background:var(--bg-error);border-radius:4px">
+              <div style="word-break:break-all">{{ script.full_url }}</div>
+              <div style="margin-top:0.3rem">
+                {% for cat in script.categories %}<span class="badge badge-warning">{{ cat }}</span>{% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if ls_result.links %}
+          {% for link in ls_result.links['items'] %}
+            {% if link.is_sensitive %}
+            <div style="margin-bottom:0.5rem;padding:0.5rem;background:var(--bg-error);border-radius:4px">
+              <div style="word-break:break-all">{{ link.full_url }}</div>
+              <div style="margin-top:0.3rem">
+                {% for cat in link.categories %}<span class="badge badge-warning">{{ cat }}</span>{% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,11 @@
+flask>=3.0
+flask-cors>=4.0
+flask-limiter>=3.5
+flasgger>=0.9.7
+requests>=2.31
+dnspython>=2.4
+python-whois>=0.9
+playwright>=1.40
+gunicorn>=21.0.0
+python-dotenv>=1.0
+gunicorn

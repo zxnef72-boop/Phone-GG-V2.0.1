@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}URL Status Check — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🔗</span> URL Status Check</div>
+    <div class="page-subtitle">HTTP status, redirect chain, SSL cert info, & soft-404 detection</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">URL</label>
+      <input name="check404_url" class="form-input" placeholder="https://target.com/page" value="{{ check404_target or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🔗 Cek URL">🔗 Cek URL</button>
+  </form>
+</div>
+{% if check404_error %}<div class="alert alert-error">{{ check404_error }}</div>{% endif %}
+{% if check404_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Result</h3></div>
+  <div class="result-body">
+    {% if check404_result.error %}
+    <div class="alert alert-error">{{ check404_result.error }} — {{ check404_result.recommendation or '' }}</div>
+    {% else %}
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="value">{{ check404_result.status_code }}</div><div class="label">Status Code</div></div>
+      <div class="stat-tile"><div class="value">{{ check404_result.response_time_ms }}ms</div><div class="label">Response Time</div></div>
+      <div class="stat-tile"><div class="value">{{ check404_result.redirect_chain|length }}</div><div class="label">Redirects</div></div>
+      <div class="stat-tile"><div class="value">{{ 'Valid' if check404_result.ssl and check404_result.ssl.valid else 'N/A' }}</div><div class="label">SSL</div></div>
+    </div>
+    {% if check404_result.recommendation %}
+    <div class="alert alert-info">{{ check404_result.recommendation }}</div>
+    {% endif %}
+    <h3 style="margin:1rem 0 .5rem;font-size:.9rem;color:var(--text-muted)">Redirect Chain</h3>
+    <ol style="font-size:.8rem;color:var(--text-secondary);padding-left:1.5rem">
+    {% for step in check404_result.redirect_chain %}
+    <li>{{ step }}</li>
+    {% endfor %}
+    </ol>
+    <h3 style="margin:1rem 0 .5rem;font-size:.9rem;color:var(--text-muted)">Full Details</h3>
+    <div class="json-view">{{ check404_result | tojson(indent=2) }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

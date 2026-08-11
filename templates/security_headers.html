@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Security Headers — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🔒</span> Security Headers Analyzer</div>
+    <div class="page-subtitle">Cek HTTP security headers dengan scoring & grade A-F</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">URL</label>
+      <input name="sh_target" class="form-input" placeholder="https://target.com" value="{{ sh_target or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🔒 Analyze">🔒 Analyze</button>
+  </form>
+</div>
+{% if sh_error %}<div class="alert alert-error">{{ sh_error }}</div>{% endif %}
+{% if sh_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Security Headers Report</h3></div>
+  <div class="result-body">
+    {% if sh_result.error %}
+    <div class="alert alert-error">{{ sh_result.error }}</div>
+    {% else %}
+    <div class="stat-grid">
+      <div class="stat-tile {% if sh_result.grade in ['A','B'] %}success{% elif sh_result.grade in ['C','D'] %}warning{% else %}danger{% endif %}">
+        <div class="value" style="font-size:2rem">{{ sh_result.grade }}</div><div class="label">Grade</div>
+      </div>
+      <div class="stat-tile"><div class="value">{{ sh_result.score }}/{{ sh_result.max_score }}</div><div class="label">Score</div></div>
+      <div class="stat-tile"><div class="value">{{ sh_result.percentage }}%</div><div class="label">Coverage</div></div>
+    </div>
+    <div class="table-responsive"><table class="data-table">
+      <thead><tr><th>Header</th><th>Status</th><th>Value</th><th>Required</th></tr></thead>
+      <tbody>
+      {% for name, info in sh_result.security_headers.items() %}
+      <tr>
+        <td style="font-weight:600">{{ name }}</td>
+        <td>{% if info.found %}<span class="badge badge-found">✓</span>{% else %}<span class="badge badge-not-found">✗</span>{% endif %}</td>
+        <td style="font-size:.8rem;color:var(--text-muted);word-break:break-all">{{ info.value or '—' }}</td>
+        <td>{% if info.required %}<span class="badge badge-high">Yes</span>{% else %}No{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <h3 style="margin:1.5rem 0 .5rem;font-size:.9rem;color:var(--text-muted)">Recommendations</h3>
+    {% for rec in sh_result.recommendations %}
+    <div class="alert alert-{% if 'TAMBAH' in rec %}warning{% else %}info{% endif %}" style="margin-bottom:.5rem">{{ rec }}</div>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

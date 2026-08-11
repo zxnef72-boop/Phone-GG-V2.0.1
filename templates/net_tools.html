@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+{% block title %}Net Tools Console — PhoneGG{% endblock %}
+
+{% block page_css %}
+<style>
+  .nt-wrap {
+    font-family: 'Courier New', ui-monospace, monospace;
+  }
+  .nt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .6rem;
+    margin-bottom: .6rem;
+  }
+  .nt-header h2 {
+    color: #22c55e;
+    font-weight: 700;
+    letter-spacing: .5px;
+    font-size: 1.25rem;
+    margin: 0;
+  }
+  .nt-header-actions {
+    display: flex;
+    gap: .4rem;
+  }
+  .nt-info-toggle {
+    background: none;
+    border: 1px solid #1f2937;
+    color: #6b7280;
+    font-family: inherit;
+    font-size: .72rem;
+    border-radius: .35rem;
+    padding: .3rem .6rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .nt-info-toggle:hover { color: #22c55e; border-color: #22c55e; }
+
+  .nt-line-actions {
+    display: inline-flex;
+    gap: .4rem;
+    margin-left: .5rem;
+  }
+  .nt-copy-btn {
+    background: none;
+    border: 1px solid #1f2937;
+    color: #6b7280;
+    font-family: inherit;
+    font-size: .65rem;
+    border-radius: .3rem;
+    padding: .1rem .4rem;
+    cursor: pointer;
+  }
+  .nt-copy-btn:hover { color: #22c55e; border-color: #22c55e; }
+  .nt-copy-btn.copied { color: #22c55e; border-color: #22c55e; }
+
+  .nt-note {
+    background: rgba(34, 197, 94, .08);
+    border: 1px solid rgba(34, 197, 94, .3);
+    border-radius: .5rem;
+    padding: .6rem .85rem;
+    font-size: .78rem;
+    color: #a3a3a3;
+    margin-bottom: .6rem;
+    line-height: 1.45;
+    display: none; /* collapsed by default biar terminal langsung kelihatan */
+  }
+  .nt-note.open { display: block; }
+  .nt-note strong { color: #22c55e; }
+  .nt-note code {
+    background: rgba(255,255,255,.06);
+    padding: 0 .3rem;
+    border-radius: .25rem;
+    color: #93c5fd;
+  }
+
+  .nt-terminal {
+    background: #05070a;
+    border: 1px solid #1f2937;
+    border-radius: .6rem;
+    overflow: hidden;
+    box-shadow: 0 0 25px rgba(34,197,94,.06);
+  }
+  .nt-titlebar {
+    background: #0d1117;
+    padding: .45rem .9rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    border-bottom: 1px solid #1f2937;
+  }
+  .nt-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .nt-dot.red { background: #ef4444; }
+  .nt-dot.yellow { background: #f59e0b; }
+  .nt-dot.green { background: #22c55e; }
+  .nt-titlebar span.label {
+    margin-left: .5rem;
+    color: #6b7280;
+    font-size: .78rem;
+  }
+  .nt-titlebar .nt-status {
+    margin-left: auto;
+    font-size: .7rem;
+    color: #6b7280;
+  }
+  .nt-titlebar .nt-status.running { color: #f59e0b; }
+  .nt-titlebar .nt-status.idle { color: #22c55e; }
+
+  .nt-screen {
+    padding: .85rem 1rem;
+    height: 72vh;
+    min-height: 420px;
+    overflow-y: auto;
+    color: #22c55e;
+    font-size: .85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    cursor: text;
+    scroll-behavior: smooth;
+  }
+  .nt-screen .line-cmd { color: #e5e7eb; }
+  .nt-screen .line-cmd .prompt-user { color: #4ade80; font-weight: 700; }
+  .nt-screen .line-cmd .prompt-sep { color: #6b7280; }
+  .nt-screen .line-cmd .prompt-path { color: #60a5fa; font-weight: 700; }
+  .nt-screen .line-cmd .prompt-dollar { color: #6b7280; }
+  .nt-screen .line-cmd .typed-text { color: #f3f4f6; }
+  .nt-screen .line-err { color: #f87171; }
+  .nt-screen .line-meta { color: #6b7280; }
+  .nt-screen .line-out { color: #d1fae5; }
+  .nt-screen .line-help { color: #93c5fd; }
+
+  .nt-prompt-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .nt-prompt-line .prompt-user { color: #4ade80; font-weight: 700; }
+  .nt-prompt-line .prompt-sep { color: #6b7280; }
+  .nt-prompt-line .prompt-path { color: #60a5fa; font-weight: 700; }
+  .nt-prompt-line .prompt-dollar { color: #6b7280; margin-right: .4rem; }
+  #ntInput {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #f3f4f6;
+    font-family: inherit;
+    font-size: .85rem;
+    flex: 1;
+    min-width: 120px;
+    caret-color: #22c55e;
+  }
+  #ntInput:disabled { color: #6b7280; }
+
+  @media (max-width: 640px) {
+    .nt-screen { height: 68vh; min-height: 380px; font-size: .78rem; }
+    .nt-header h2 { font-size: 1.05rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="nt-wrap">
+  <div class="nt-header">
+    <h2>Net Tools Console</h2>
+    <div class="nt-header-actions">
+      <button class="nt-info-toggle" id="ntInfoToggle" type="button">Info</button>
+      <button class="nt-info-toggle" id="ntExportBtn" type="button">Simpan Log</button>
+    </div>
+  </div>
+
+  <div class="nt-note" id="ntNote">
+    <strong>Bukan bash bebas.</strong> Ketik langsung di layar terminal, format:
+    <code>&lt;command&gt; &lt;target&gt;</code> — misal <code>whois example.com</code>. Command HANYA dijalankan
+    kalau namanya ada di whitelist (ketik <code>help</code> buat lihat daftarnya), dan target divalidasi
+    (IP privat/loopback diblokir) sebelum dieksekusi. Tidak ada command bebas yang diteruskan ke shell.
+    Tekan <code>Tab</code> buat auto-lengkapi nama command, <code>↑/↓</code> buat riwayat, <code>clear</code> buat bersihin layar.
+    Tiap hasil output ada tombol salin, dan seluruh log sesi ini bisa disimpan lewat tombol "Simpan Log" di pojok atas.
+  </div>
+
+  <div class="nt-terminal">
+    <div class="nt-titlebar">
+      <span class="nt-dot red"></span>
+      <span class="nt-dot yellow"></span>
+      <span class="nt-dot green"></span>
+      <span class="label">phonegg@net-tools:~</span>
+      <span class="nt-status idle" id="ntStatus">● idle</span>
+    </div>
+    <div class="nt-screen" id="ntScreen">
+      <div class="line-meta">PhoneGG Net Tools Console — whitelist command runner (bukan bash bebas)</div>
+      <div class="line-meta">Ketik <span class="line-help">help</span> untuk lihat daftar command, lalu Enter buat jalankan.</div>
+      <div class="nt-prompt-line" id="ntPromptLine">
+        <span class="prompt-user">phonegg@nettools</span><span class="prompt-sep">:</span><span class="prompt-path">~</span><span class="prompt-dollar">$</span>
+        <input type="text" id="ntInput" autocomplete="off" spellcheck="false" autofocus>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Data command whitelist dari server, dipakai JS buat validasi, help, & tab-complete — bukan input bebas #}
+<script id="ntCommandsData" type="application/json">{{ nt_commands | tojson }}</script>
+{% endblock %}
+
+{% block page_js %}
+<script>
+(function () {
+  const screen = document.getElementById('ntScreen');
+  const promptLine = document.getElementById('ntPromptLine');
+  const input = document.getElementById('ntInput');
+  const statusEl = document.getElementById('ntStatus');
+  const infoToggle = document.getElementById('ntInfoToggle');
+  const noteEl = document.getElementById('ntNote');
+  const exportBtn = document.getElementById('ntExportBtn');
+
+  const COMMANDS = JSON.parse(document.getElementById('ntCommandsData').textContent || '[]');
+  const COMMAND_KEYS = COMMANDS.map(c => c.key);
+  const COMMAND_SET = new Set(COMMAND_KEYS);
+
+  let history = JSON.parse(sessionStorage.getItem('ntHistory') || '[]');
+  let historyPos = history.length;
+  let busy = false;
+
+  infoToggle.addEventListener('click', () => {
+    noteEl.classList.toggle('open');
+  });
+
+  exportBtn.addEventListener('click', () => {
+    const lines = [];
+    screen.querySelectorAll('div').forEach(el => {
+      if (el === promptLine) return;
+      lines.push(el.textContent);
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = url;
+    a.download = `phonegg_nettools_${stamp}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  function setStatus(running) {
+    statusEl.textContent = running ? '● running…' : '● idle';
+    statusEl.className = 'nt-status ' + (running ? 'running' : 'idle');
+  }
+
+  function scrollDown() {
+    screen.scrollTop = screen.scrollHeight;
+  }
+
+  function appendLine(text, cls) {
+    const div = document.createElement('div');
+    if (cls) div.className = cls;
+    div.textContent = text;
+    screen.insertBefore(div, promptLine);
+    scrollDown();
+    return div;
+  }
+
+  function appendOutputWithCopy(text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'line-out';
+
+    const pre = document.createElement('span');
+    pre.textContent = text;
+    wrap.appendChild(pre);
+
+    const actions = document.createElement('span');
+    actions.className = 'nt-line-actions';
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'nt-copy-btn';
+    copyBtn.textContent = 'salin';
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = 'tersalin';
+        copyBtn.classList.add('copied');
+        setTimeout(() => {
+          copyBtn.textContent = 'salin';
+          copyBtn.classList.remove('copied');
+        }, 1500);
+      } catch (e) {
+        copyBtn.textContent = 'gagal';
+      }
+    });
+    actions.appendChild(copyBtn);
+    wrap.appendChild(actions);
+
+    screen.insertBefore(wrap, promptLine);
+    scrollDown();
+  }
+
+  function appendStaticCmdLine(fullText) {
+    const div = document.createElement('div');
+    div.className = 'line-cmd';
+    div.innerHTML = '<span class="prompt-user">phonegg@nettools</span>' +
+                     '<span class="prompt-sep">:</span>' +
+                     '<span class="prompt-path">~</span>' +
+                     '<span class="prompt-dollar">$ </span>' +
+                     '<span class="typed-text"></span>';
+    div.querySelector('.typed-text').textContent = fullText;
+    screen.insertBefore(div, promptLine);
+    scrollDown();
+  }
+
+  function showHelp() {
+    appendLine('Command yang tersedia (whitelist tetap):', 'line-help');
+    COMMANDS.forEach(c => appendLine(`  ${c.key.padEnd(14, ' ')} — ${c.desc}`, 'line-help'));
+    appendLine('Format: <command> <target>   contoh: whois example.com', 'line-help');
+  }
+
+  function saveHistory() {
+    // Simpan maks 50 entri terakhir, biar sessionStorage gak bengkak
+    sessionStorage.setItem('ntHistory', JSON.stringify(history.slice(-50)));
+  }
+
+  function focusInput() {
+    if (!busy) {
+      input.disabled = false;
+      input.focus();
+    }
+  }
+
+  async function runLine(raw) {
+    const trimmed = raw.trim();
+    if (!trimmed || busy) return;
+
+    appendStaticCmdLine(trimmed);
+
+    if (trimmed === 'help' || trimmed === '--help' || trimmed === '?') {
+      showHelp();
+      return;
+    }
+    if (trimmed === 'clear' || trimmed === 'cls') {
+      screen.querySelectorAll('div').forEach(el => { if (el !== promptLine) el.remove(); });
+      return;
+    }
+
+    const parts = trimmed.split(/\s+/);
+    const command = parts[0];
+    const target = parts.slice(1).join(' ');
+
+    if (!COMMAND_SET.has(command)) {
+      appendLine(`Command '${command}' tidak dikenal. Ketik 'help' untuk daftar command yang tersedia.`, 'line-err');
+      return;
+    }
+    if (!target) {
+      appendLine(`Format salah. Contoh: ${command} example.com`, 'line-err');
+      return;
+    }
+
+    busy = true;
+    input.disabled = true;
+    setStatus(true);
+
+    try {
+      const res = await fetch('/api/v1/net-tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command, target }),
+      });
+      const json = await res.json();
+
+      if (json.status === 'success') {
+        const d = json.data;
+        appendOutputWithCopy(d.output);
+        appendLine(`[exit ${d.exit_code} · ${d.duration_seconds}s]${d.truncated ? ' (output dipotong)' : ''}`, 'line-meta');
+      } else {
+        appendLine(json.message || 'Command gagal.', 'line-err');
+      }
+    } catch (e) {
+      appendLine('Gagal menghubungi server: ' + e, 'line-err');
+    } finally {
+      busy = false;
+      input.value = '';
+      setStatus(false);
+      focusInput();
+    }
+  }
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = input.value;
+      const trimmed = val.trim();
+      // Jangan simpan duplikat berturut-turut di history
+      if (trimmed && history[history.length - 1] !== trimmed) {
+        history.push(trimmed);
+        saveHistory();
+      }
+      historyPos = history.length;
+      input.value = '';
+      runLine(val);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (historyPos > 0) {
+        historyPos--;
+        input.value = history[historyPos] || '';
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyPos < history.length - 1) {
+        historyPos++;
+        input.value = history[historyPos] || '';
+      } else {
+        historyPos = history.length;
+        input.value = '';
+      }
+    } else if (e.key === 'Tab') {
+      // Auto-lengkapi nama command whitelist kalau baru ngetik satu kata
+      const val = input.value;
+      if (!val.includes(' ')) {
+        const match = COMMAND_KEYS.find(k => k.startsWith(val));
+        if (match) {
+          e.preventDefault();
+          input.value = match + ' ';
+        }
+      } else {
+        e.preventDefault(); // cegah Tab pindah fokus keluar dari input pas lagi ngetik target
+      }
+    }
+  });
+
+  // Klik di mana saja di layar terminal langsung fokus ke input, kayak terminal beneran
+  screen.addEventListener('click', function () {
+    focusInput();
+  });
+
+  focusInput();
+})();
+</script>
+{% endblock %}

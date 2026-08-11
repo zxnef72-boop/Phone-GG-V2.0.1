@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Tech Detect — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">⚙️</span> Technology Detector</div>
+    <div class="page-subtitle">Deteksi CMS, framework, web server, CDN, analytics, & JS library</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">URL</label>
+      <input name="td_target" class="form-input" placeholder="https://target.com" value="{{ td_target or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="⚙️ Detect">⚙️ Detect Tech</button>
+  </form>
+</div>
+{% if td_error %}<div class="alert alert-error">{{ td_error }}</div>{% endif %}
+{% if td_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>Technology Stack</h3></div>
+  <div class="result-body">
+    {% if td_result.error %}
+    <div class="alert alert-error">{{ td_result.error }}</div>
+    {% else %}
+    <div class="stat-tile" style="margin-bottom:1rem"><div class="value">{{ td_result.total_detected }}</div><div class="label">Technologies Detected</div></div>
+    {% for category, techs in td_result.technologies.items() %}
+    <div style="margin-bottom:1rem">
+      <h3 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">{{ category }}</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+      {% if techs is string %}
+        <span class="badge badge-info">{{ techs }}</span>
+      {% else %}
+        {% for tech in techs %}<span class="badge badge-found">{{ tech }}</span>{% endfor %}
+      {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

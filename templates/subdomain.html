@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Subdomain Enum — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🌐</span> Subdomain Enumeration</div>
+    <div class="page-subtitle">crt.sh + DNS brute-force (200+ prefix) + search engine dorks</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Domain</label>
+      <input name="sub_target" class="form-input" placeholder="target.com" value="{{ sub_target or '' }}" required>
+    </div>
+    <div class="checkbox-group">
+      <label class="checkbox-label"><input type="checkbox" name="use_crtsh" checked> 🔒 crt.sh (CT logs)</label>
+      <label class="checkbox-label"><input type="checkbox" name="use_bruteforce" checked> 🔨 DNS brute-force</label>
+      <label class="checkbox-label"><input type="checkbox" name="use_search" checked> 🔍 Search engine</label>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🌐 Enumerate">🌐 Enumerate</button>
+  </form>
+</div>
+{% if sub_error %}<div class="alert alert-error">{{ sub_error }}</div>{% endif %}
+{% if sub_result %}
+<div class="result-panel">
+  <div class="result-header">
+    <h3>{{ sub_result.total }} subdomains found</h3>
+    <a href="/export" class="btn btn-ghost btn-sm">📥 Export</a>
+  </div>
+  <div class="result-body">
+    {% for source, subs in sub_result.sources.items() %}
+    <div style="margin-bottom:1rem">
+      <h3 style="font-size:.85rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:.5rem">{{ source }} ({{ subs|length }})</h3>
+      <ul class="link-list">
+        {% for s in subs %}<li><a href="https://{{ s }}" target="_blank" rel="noopener" class="link">{{ s }}</a></li>{% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

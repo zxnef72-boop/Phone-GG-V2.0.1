@@ -1,0 +1,2157 @@
+{% extends "base.html" %}
+{% block title %}Pen Repeater — PhoneGG Pen{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+
+  .rep-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    background: var(--bg-secondary);
+    overflow: hidden;
+  }
+
+  .rep-header {
+    flex: 0 0 auto;
+    padding: 1rem 1.5rem 0.75rem;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .rep-header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .rep-header h1 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.4rem;
+    color: var(--text-primary);
+  }
+
+  .rep-header p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .rep-warning {
+    margin-top: 0.6rem;
+    padding: 0.6rem 0.9rem;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid #f59e0b;
+    border-radius: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+  }
+
+  /* ── Shell: sidebar + main area ── */
+  .rep-shell {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+  }
+
+  /* ── History sidebar ── */
+  .rep-sidebar {
+    flex: 0 0 260px;
+    width: 260px;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: transform 0.2s ease, margin-left 0.2s ease;
+  }
+  @media (min-width: 900px) {
+    .rep-sidebar.collapsed { margin-left: -260px; }
+  }
+  @media (max-width: 899px) {
+    .rep-sidebar {
+      position: absolute;
+      top: 0; bottom: 0; left: 0;
+      width: 82vw;
+      max-width: 300px;
+      min-width: 0;
+      z-index: 30;
+      box-shadow: 4px 0 16px rgba(0,0,0,0.4);
+      transform: translateX(0);
+      margin-left: 0 !important;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .rep-sidebar.collapsed { transform: translateX(-100%); }
+  }
+
+  .rep-sidebar-backdrop { display: none; }
+  @media (max-width: 899px) {
+    .rep-sidebar-backdrop {
+      display: block;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 25;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .rep-sidebar-backdrop.active { opacity: 1; pointer-events: auto; }
+  }
+
+  .sidebar-close-btn { display: none; }
+  @media (max-width: 899px) {
+    .sidebar-close-btn { display: inline-flex; }
+  }
+
+  .rep-sidebar-header {
+    flex: 0 0 auto;
+    padding: 0.7rem 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+  }
+
+  .rep-sidebar-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+  }
+
+  .rep-sidebar-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+
+  .hist-item {
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background 0.1s ease;
+  }
+  .hist-item:hover { background: var(--bg-tertiary); }
+
+  .hist-item-top {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .hist-method {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    font-family: 'Courier New', monospace;
+  }
+
+  .hist-del {
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    padding: 0.1rem 0.3rem;
+  }
+  .hist-item:hover .hist-del { opacity: 1; }
+  .hist-del:hover { color: #ef4444; }
+
+  .hist-url {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hist-time {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+  }
+
+  /* ── Main area (tab bar + 2-panel body) ── */
+  .rep-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .rep-tabbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.6rem;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+  }
+
+  .rtab {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.4rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .rtab.active {
+    color: var(--text-primary);
+    border-color: var(--accent-color);
+    background: var(--bg-tertiary);
+  }
+  .rtab-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .rtab-close {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    padding: 0 0.15rem;
+  }
+  .rtab-close:hover { color: #ef4444; }
+  .rtab-status {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+  .rtab-status.status-2xx { background: #10b981; }
+  .rtab-status.status-3xx { background: #f59e0b; }
+  .rtab-status.status-4xx, .rtab-status.status-5xx, .rtab-status.status-err { background: #ef4444; }
+
+  .rtab-add {
+    flex: 0 0 auto;
+    width: 26px; height: 26px;
+    border-radius: 0.4rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rtab-add:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+  .sidebar-toggle-btn {
+    flex: 0 0 auto;
+    width: 26px; height: 26px;
+    border-radius: 0.4rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sidebar-toggle-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+  .rep-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  @media (min-width: 900px) {
+    .rep-body {
+      flex-direction: row;
+    }
+  }
+
+  .rep-panel {
+    flex: 1 1 50%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  @media (min-width: 900px) {
+    .rep-panel {
+      border-bottom: none;
+      border-right: 1px solid var(--border-color);
+    }
+    .rep-panel:last-child {
+      border-right: none;
+    }
+  }
+
+  .rep-panel-header {
+    flex: 0 0 auto;
+    padding: 0.75rem 1rem;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .rep-panel-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+
+  .rep-panel-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .rep-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  select, input[type="text"], input[type="number"], textarea {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+  }
+
+  #methodSelect {
+    width: 100px;
+    flex: 0 0 auto;
+  }
+
+  #urlInput {
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+
+  .headers-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .header-row {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .header-row input {
+    flex: 1 1 0;
+    min-width: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+  }
+
+  .header-row button {
+    flex: 0 0 auto;
+  }
+
+  #bodyInput, #rawInput {
+    width: 100%;
+    min-height: 160px;
+    resize: vertical;
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  button {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+
+  button:hover { background: var(--accent-hover); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+  }
+  .btn-ghost.active {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+  }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 0.35rem 0.6rem;
+  }
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.1); }
+
+  .btn-small { padding: 0.35rem 0.7rem; font-size: 0.78rem; }
+
+  .tabs {
+    display: flex;
+    gap: 0.3rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0.5rem;
+  }
+
+  .tab-btn {
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.82rem;
+  }
+
+  .tab-btn.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+    font-weight: 600;
+  }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.3rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  .status-2xx { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+  .status-3xx { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+  .status-4xx, .status-5xx { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+  .status-err { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+  .response-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    align-items: center;
+  }
+
+  .response-headers-view {
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    padding: 0.6rem;
+    max-height: 160px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* ── Response body viewer: Pretty / Raw / Hex ── */
+  .body-viewer-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .view-toggle {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .vt-btn {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+  }
+  .vt-btn.active {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .search-bar input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.78rem;
+    padding: 0.35rem 0.5rem;
+  }
+  .search-count {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    min-width: 42px;
+    text-align: center;
+  }
+
+  .response-body-viewer {
+    margin: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    min-height: 160px;
+    max-height: 60vh;
+    overflow: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .response-body-viewer code.hljs {
+    background: transparent !important;
+    padding: 0 !important;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .response-body-viewer code.hex-code {
+    white-space: pre;
+    word-break: normal;
+    display: block;
+  }
+
+  mark.search-mark {
+    background: rgba(245, 158, 11, 0.35);
+    color: inherit;
+    border-radius: 2px;
+  }
+  mark.search-mark-active {
+    background: #f59e0b;
+    color: #1a1a1a;
+  }
+
+  .empty-state {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 2rem 1rem;
+  }
+
+  .rep-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding: 1rem;
+  }
+
+  .spinner-sm {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--accent-color);
+    border-radius: 50%;
+    animation: rep-spin 0.8s linear infinite;
+  }
+  @keyframes rep-spin { to { transform: rotate(360deg); } }
+
+  .error-message {
+    color: #ef4444;
+    padding: 0.75rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  label.field-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  /* ── Fix: hindari 2 elemen dgn class .rep-tabbar bersarang ── */
+  .rep-tabbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1 1 auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .rep-tabbar-inner::-webkit-scrollbar { display: none; }
+
+  /* ── Cegah auto-zoom iOS pada form field (butuh font-size >=16px) ── */
+  @media (max-width: 899px) {
+    select, input[type="text"], input[type="number"], textarea {
+      font-size: 16px;
+    }
+  }
+
+  /* ── Target sentuh lebih besar di mobile ── */
+  @media (max-width: 899px) {
+    .sidebar-toggle-btn,
+    .rtab-add,
+    .hist-del,
+    .rtab-close {
+      width: 40px;
+      height: 40px;
+      font-size: 1.05rem;
+    }
+    .hist-del { opacity: 1; }
+    button, .btn-small { min-height: 40px; }
+    .btn-small { padding: 0.5rem 0.9rem; }
+    .header-row button { min-width: 40px; }
+  }
+
+  /* ── Panel header: title & tombol jangan bertabrakan di layar sempit ── */
+  @media (max-width: 480px) {
+    .rep-panel-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .rep-panel-header .rep-row {
+      justify-content: flex-end;
+    }
+    .rep-header h1 { font-size: 1.15rem; }
+    .rep-header p { font-size: 0.8rem; }
+    .rep-warning { font-size: 0.72rem; }
+  }
+
+  /* ── Proporsi panel lebih enak di mobile ── */
+  @media (max-width: 899px) {
+    .rep-panel {
+      flex: 1 1 auto;
+      min-height: 45vh;
+    }
+    #bodyInput, #rawInput { min-height: 120px; }
+    .response-body-viewer { max-height: 45vh; }
+  }
+
+  /* ── Safe-area untuk device dengan notch ── */
+  .rep-header { padding-top: max(1rem, env(safe-area-inset-top)); }
+  .rep-container { padding-bottom: env(safe-area-inset-bottom); }
+
+  /* ── Hilangkan highlight biru saat tap di iOS/Android ── */
+  button, .rtab, .hist-item, .tab-btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* ── Cookie Jar panel ── */
+  .cookie-jar-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .cookie-jar-domain {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+  }
+  .cookie-jar-domain strong { color: var(--text-primary); font-family: 'Courier New', monospace; }
+  .cookie-jar-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+  .cookie-jar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .cookie-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+  .cookie-row input {
+    flex: 1 1 0;
+    min-width: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+  }
+  .cookie-row .cookie-flags {
+    flex: 0 0 auto;
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 0.25rem;
+  }
+  .cookie-flag {
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+  }
+
+  /* ── Compare / Loop Send modals ── */
+  .rep-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 1rem;
+  }
+  .rep-modal {
+    background: var(--bg-secondary, #10151f);
+    border: 1px solid var(--border-color, #2a2f3a);
+    border-radius: 0.5rem;
+    width: 100%; max-width: 900px; max-height: 90vh;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .rep-modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color, #2a2f3a);
+    font-weight: 600;
+  }
+  .rep-modal-body { padding: 1rem; overflow-y: auto; }
+  .rep-modal select {
+    background: var(--bg-tertiary, #1a2030); color: inherit;
+    border: 1px solid var(--border-color, #2a2f3a); border-radius: 0.3rem;
+    padding: 0.35rem 0.5rem; flex: 1 1 0; min-width: 0;
+  }
+  .compare-cols { display: flex; gap: 0.75rem; margin-top: 0.75rem; }
+  .compare-col { flex: 1 1 0; min-width: 0; }
+  .compare-col-title { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
+  .diff-view {
+    font-family: 'Courier New', monospace; font-size: 0.75rem;
+    background: var(--bg-tertiary, #1a2030); border-radius: 0.3rem;
+    padding: 0.5rem; max-height: 50vh; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  .diff-same { color: var(--text-secondary); }
+  .diff-add { background: rgba(34,197,94,0.18); color: #4ade80; }
+  .diff-del { background: rgba(239,68,68,0.18); color: #f87171; }
+  .loop-result-list { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.3rem; max-height: 30vh; overflow-y: auto; }
+  .loop-result-item {
+    display: flex; gap: 0.5rem; align-items: center; padding: 0.35rem 0.5rem;
+    background: var(--bg-tertiary, #1a2030); border-radius: 0.3rem; cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .loop-result-item:hover { outline: 1px solid var(--border-color, #2a2f3a); }
+  .loop-result-detail { margin-top: 0.75rem; }
+  .loop-summary { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem; }
+</style>
+
+<div class="rep-container">
+  <div class="rep-header">
+    <div class="rep-header-top">
+      <div>
+        <h1>🛠️ Pen Repeater — PhoneGG Pen</h1>
+        <p>Susun, kirim, ulangi, dan bandingkan HTTP request custom (mirip tab Repeater di Burp Suite): multi-tab, riwayat tersimpan, dan response viewer Pretty/Raw/Hex.</p>
+      </div>
+    </div>
+    <div class="rep-warning">
+      ⚠️ Hanya gunakan pada target yang <strong>sudah Anda miliki atau sudah ada izin tertulis</strong>
+      untuk diuji (authorized penetration testing). Penggunaan pada sistem tanpa izin adalah ilegal.
+    </div>
+  </div>
+
+  <div class="rep-shell">
+    <!-- ── Backdrop (mobile only) ── -->
+    <div class="rep-sidebar-backdrop" id="repSidebarBackdrop" onclick="toggleHistorySidebar(false)"></div>
+
+    <!-- ── Sidebar: History ── -->
+    <div class="rep-sidebar" id="repSidebar">
+      <div class="rep-sidebar-header">
+        <span class="rep-sidebar-title">🕒 History</span>
+        <div class="rep-row">
+          <button class="btn-small btn-ghost" onclick="clearAllHistory()" title="Hapus semua riwayat">🗑</button>
+          <button class="btn-small btn-ghost sidebar-close-btn" onclick="toggleHistorySidebar(false)" title="Tutup">✕</button>
+        </div>
+      </div>
+      <div class="rep-sidebar-list" id="historyList">
+        <div class="empty-state" style="padding:1rem;">Memuat riwayat...</div>
+      </div>
+    </div>
+
+    <!-- ── Main: tab bar + builder/response ── -->
+    <div class="rep-main">
+      <div class="rep-tabbar">
+        <button class="sidebar-toggle-btn" onclick="toggleHistorySidebar()" title="Tampilkan/sembunyikan History">☰</button>
+        <div class="rep-tabbar-inner" id="tabBarList"></div>
+        <button class="rtab-add" onclick="addNewTab()" title="Tab Repeater baru">+</button>
+      </div>
+
+      <div class="rep-body">
+        <!-- ── Panel kiri: Request Builder ── -->
+        <div class="rep-panel">
+          <div class="rep-panel-header">
+            <span class="rep-panel-title">📤 Request</span>
+            <div class="rep-row">
+              <button class="btn-small" id="sendBtn" onclick="sendRepeaterRequest()" title="Kirim (Ctrl/Cmd+Enter)">▶ Send</button>
+              <button class="btn-small btn-ghost" onclick="clearRequestForm()">Clear</button>
+              <button class="btn-small btn-ghost" onclick="duplicateActiveTab()" title="Duplikat tab ini beserta isinya">⧉ Duplicate</button>
+              <button class="btn-small btn-ghost" onclick="copyRequestAsCurl()" title="Salin request saat ini sebagai perintah cURL">⎘ Copy as cURL</button>
+              <button class="btn-small btn-ghost" onclick="openCompareModal()" title="Bandingkan 2 response dari tab yang berbeda">🆚 Compare</button>
+              <button class="btn-small btn-ghost" onclick="openLoopModal()" title="Kirim request yang sama berulang kali">🔁 Loop</button>
+            </div>
+          </div>
+          <div class="rep-panel-content">
+
+            <div class="tabs">
+              <button class="tab-btn active" data-tab="builder" onclick="switchTab('builder')">Builder</button>
+              <button class="tab-btn" data-tab="raw" onclick="switchTab('raw')">Raw / Paste</button>
+              <button class="tab-btn" data-tab="cookies" onclick="switchTab('cookies')">🍪 Cookies</button>
+            </div>
+
+            <!-- Tab: Builder form -->
+            <div class="tab-pane active" id="tab-builder">
+              <div class="rep-row">
+                <select id="methodSelect">
+                  <option>GET</option>
+                  <option>POST</option>
+                  <option>PUT</option>
+                  <option>PATCH</option>
+                  <option>DELETE</option>
+                  <option>HEAD</option>
+                  <option>OPTIONS</option>
+                </select>
+                <input type="text" id="urlInput" placeholder="https://target-yang-diizinkan.com/path">
+              </div>
+
+              <div>
+                <label class="field-label">Headers</label>
+                <div class="headers-editor" id="headersEditor"></div>
+                <button class="btn-small btn-ghost" style="margin-top:0.4rem;" onclick="addHeaderRow('', '')">+ Tambah header</button>
+              </div>
+
+              <div>
+                <label class="field-label">Body (untuk POST/PUT/PATCH/DELETE)</label>
+                <textarea id="bodyInput" placeholder='{"key": "value"}'></textarea>
+              </div>
+
+              <div class="rep-row">
+                <div>
+                  <label class="field-label">Timeout (detik)</label><br>
+                  <input type="number" id="timeoutInput" value="10" min="1" max="30" style="width:90px;">
+                </div>
+                <div style="align-self:flex-end;">
+                  <label style="font-size:0.8rem;color:var(--text-secondary);">
+                    <input type="checkbox" id="followRedirects"> Ikuti redirect
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: Raw paste -->
+            <div class="tab-pane" id="tab-raw">
+              <label class="field-label">Paste raw HTTP request (dari DevTools/proxy lain) ATAU perintah cURL (dari "Copy as cURL" browser)</label>
+              <textarea id="rawInput" placeholder="GET /path HTTP/1.1&#10;Host: example.com&#10;User-Agent: ...&#10;&#10;— atau —&#10;curl 'https://example.com/path' -H 'X-Test: 1'"></textarea>
+              <button class="btn-small" onclick="parseRawIntoBuilder()">⇪ Isi ke Builder</button>
+            </div>
+
+            <!-- Tab: Cookie Jar -->
+            <div class="tab-pane" id="tab-cookies">
+              <div class="cookie-jar-toolbar">
+                <span class="cookie-jar-domain">Domain aktif: <strong id="cookieJarDomain">—</strong></span>
+                <label class="cookie-jar-toggle">
+                  <input type="checkbox" id="useCookieJarCheckbox" checked onchange="onUseCookieJarChanged()">
+                  Gunakan cookie jar untuk request ini
+                </label>
+              </div>
+              <div class="cookie-jar-list" id="cookieJarList"></div>
+              <div class="rep-row">
+                <button class="btn-small btn-ghost" onclick="addManualCookieRow()">+ Tambah cookie</button>
+                <button class="btn-small btn-danger" onclick="clearActiveDomainCookies()">🗑 Hapus semua cookie domain ini</button>
+              </div>
+              <p style="font-size:0.72rem;color:var(--text-secondary);margin:0;">
+                Cookie di sini otomatis terisi dari header <code>Set-Cookie</code> pada response, dan otomatis
+                dikirim balik sebagai header <code>Cookie</code> pada request berikutnya ke domain yang sama
+                (mirip session browser). Tersimpan lokal di perangkat ini (localStorage).
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Panel kanan: Response Viewer ── -->
+        <div class="rep-panel">
+          <div class="rep-panel-header">
+            <span class="rep-panel-title">📥 Response</span>
+            <div class="rep-row">
+              <button class="btn-small btn-ghost" id="copyResponseBtn" onclick="copyResponseBody()" disabled>📋 Copy body</button>
+            </div>
+          </div>
+          <div class="rep-panel-content" id="responsePanelContent">
+            <div class="empty-state">Belum ada request yang dikirim. Isi form di kiri lalu klik <strong>Send</strong>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Compare Modal ── -->
+<div class="rep-modal-backdrop" id="compareModalBackdrop" style="display:none;" onclick="if(event.target===this) closeCompareModal()">
+  <div class="rep-modal">
+    <div class="rep-modal-header">
+      <span>🆚 Compare Response</span>
+      <button class="btn-small btn-ghost" onclick="closeCompareModal()">✕</button>
+    </div>
+    <div class="rep-modal-body">
+      <div class="rep-row">
+        <select id="compareTabA"></select>
+        <select id="compareTabB"></select>
+        <button class="btn-small" onclick="runCompare()">Bandingkan</button>
+      </div>
+      <div id="compareResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Loop Send Modal ── -->
+<div class="rep-modal-backdrop" id="loopModalBackdrop" style="display:none;" onclick="if(event.target===this) closeLoopModal()">
+  <div class="rep-modal">
+    <div class="rep-modal-header">
+      <span>🔁 Loop Send</span>
+      <button class="btn-small btn-ghost" onclick="closeLoopModal()">✕</button>
+    </div>
+    <div class="rep-modal-body">
+      <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:0;">
+        Kirim request dari tab aktif berulang kali secara berurutan — berguna buat cek stabilitas endpoint, rate limiting, atau race condition. Dibatasi maksimal 20x per klik supaya gak kena rate limit API sendiri (20 req/menit).
+      </p>
+      <div class="rep-row">
+        <label>Jumlah kirim: <input type="number" id="loopCount" value="5" min="1" max="20" style="width:70px;"></label>
+        <label>Delay (ms): <input type="number" id="loopDelay" value="250" min="0" max="10000" style="width:90px;"></label>
+        <button class="btn-small" id="loopStartBtn" onclick="runLoopSend()">▶ Mulai</button>
+      </div>
+      <div class="loop-summary" id="loopSummary"></div>
+      <div class="loop-result-list" id="loopResultList"></div>
+      <div class="loop-result-detail" id="loopResultDetail"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ══════════════════════════════════════════════════════════
+  //  State: multi-tab Repeater (mirip beberapa tab di Burp)
+  // ══════════════════════════════════════════════════════════
+  let tabs = [];
+  let activeTabId = null;
+  let tabSeq = 0;
+  let headerRowCounter = 0;
+  let lastResponseBody = '';
+  let currentViewMode = 'pretty'; // pretty | raw | hex
+  let searchMatches = [];
+  let searchActiveIndex = -1;
+
+  function defaultHeaders() {
+    return [{ key: 'User-Agent', value: 'PhoneGG-Pen-Repeater/1.0' }, { key: 'Accept', value: '*/*' }];
+  }
+
+  function createTab(overrides) {
+    tabSeq++;
+    const tab = Object.assign({
+      id: 'rtab-' + tabSeq,
+      name: 'Req ' + tabSeq,
+      method: 'GET',
+      url: '',
+      headers: defaultHeaders(),
+      body: '',
+      timeout: 10,
+      followRedirects: false,
+      useCookieJar: true,
+      response: null,
+      error: null,
+    }, overrides || {});
+    tabs.push(tab);
+    return tab;
+  }
+
+  function getActiveTab() {
+    return tabs.find(t => t.id === activeTabId) || null;
+  }
+
+  function syncFormIntoActiveTab() {
+    const tab = getActiveTab();
+    if (!tab) return;
+    tab.method = document.getElementById('methodSelect').value;
+    tab.url = document.getElementById('urlInput').value;
+    tab.headers = getHeadersFromEditor();
+    tab.body = document.getElementById('bodyInput').value;
+    tab.timeout = parseInt(document.getElementById('timeoutInput').value, 10) || 10;
+    tab.followRedirects = document.getElementById('followRedirects').checked;
+    const jarCb = document.getElementById('useCookieJarCheckbox');
+    tab.useCookieJar = jarCb ? jarCb.checked : true;
+  }
+
+  function loadTabIntoForm(tab) {
+    document.getElementById('methodSelect').value = tab.method;
+    document.getElementById('urlInput').value = tab.url;
+    document.getElementById('bodyInput').value = tab.body;
+    document.getElementById('timeoutInput').value = tab.timeout;
+    document.getElementById('followRedirects').checked = tab.followRedirects;
+    const jarCb = document.getElementById('useCookieJarCheckbox');
+    if (jarCb) jarCb.checked = tab.useCookieJar !== false;
+
+    const editor = document.getElementById('headersEditor');
+    editor.innerHTML = '';
+    (tab.headers && tab.headers.length ? tab.headers : defaultHeaders()).forEach(h => addHeaderRow(h.key, h.value));
+
+    renderCookieJarPanel();
+
+    const panel = document.getElementById('responsePanelContent');
+    if (tab.error) {
+      panel.innerHTML = `<div class="error-message">${escapeHtml(tab.error)}</div>`;
+      document.getElementById('copyResponseBtn').disabled = true;
+    } else if (tab.response) {
+      renderResponse(tab.response);
+    } else {
+      panel.innerHTML = '<div class="empty-state">Belum ada request yang dikirim. Isi form di kiri lalu klik <strong>Send</strong>.</div>';
+      document.getElementById('copyResponseBtn').disabled = true;
+    }
+  }
+
+  function switchToTab(id) {
+    if (activeTabId && activeTabId !== id) syncFormIntoActiveTab();
+    activeTabId = id;
+    const tab = getActiveTab();
+    if (tab) loadTabIntoForm(tab);
+    renderTabBar();
+  }
+
+  function addNewTab() {
+    if (activeTabId) syncFormIntoActiveTab();
+    const tab = createTab();
+    switchToTab(tab.id);
+  }
+
+  function duplicateActiveTab() {
+    syncFormIntoActiveTab();
+    const src = getActiveTab();
+    if (!src) return;
+    const clone = createTab({
+      name: (src.name + ' copy').slice(0, 40),
+      method: src.method,
+      url: src.url,
+      headers: src.headers.map(h => ({ key: h.key, value: h.value })),
+      body: src.body,
+      timeout: src.timeout,
+      followRedirects: src.followRedirects,
+      useCookieJar: src.useCookieJar,
+    });
+    switchToTab(clone.id);
+  }
+
+  function closeTab(id, ev) {
+    if (ev) ev.stopPropagation();
+    const idx = tabs.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    tabs.splice(idx, 1);
+    if (tabs.length === 0) createTab();
+    if (activeTabId === id) {
+      const next = tabs[Math.max(0, idx - 1)] || tabs[0];
+      activeTabId = null;
+      switchToTab(next.id);
+    } else {
+      renderTabBar();
+    }
+  }
+
+  function renderTabBar() {
+    const bar = document.getElementById('tabBarList');
+    bar.innerHTML = '';
+    tabs.forEach(t => {
+      const pill = document.createElement('div');
+      pill.className = 'rtab' + (t.id === activeTabId ? ' active' : '');
+      pill.onclick = () => switchToTab(t.id);
+      let statusDot = '';
+      if (t.response) statusDot = `<span class="rtab-status ${statusClass(t.response.status_code)}"></span>`;
+      else if (t.error) statusDot = `<span class="rtab-status status-err"></span>`;
+      pill.innerHTML = `${statusDot}<span class="rtab-name" title="Double-click untuk rename">${escapeHtml(t.name)}</span><span class="rtab-close" onclick="closeTab('${t.id}', event)">✕</span>`;
+      const nameEl = pill.querySelector('.rtab-name');
+      nameEl.addEventListener('dblclick', (ev) => {
+        ev.stopPropagation();
+        const newName = prompt('Nama tab baru:', t.name);
+        if (newName && newName.trim()) {
+          t.name = newName.trim().slice(0, 40);
+          renderTabBar();
+        }
+      });
+      bar.appendChild(pill);
+    });
+  }
+
+  // ── Header key-value editor ──
+  function addHeaderRow(key, value) {
+    const editor = document.getElementById('headersEditor');
+    const rowId = 'hrow-' + (headerRowCounter++);
+    const row = document.createElement('div');
+    row.className = 'header-row';
+    row.id = rowId;
+    row.innerHTML = `
+      <input type="text" placeholder="Header-Name" class="h-key" value="${escapeAttr(key || '')}">
+      <input type="text" placeholder="value" class="h-value" value="${escapeAttr(value || '')}">
+      <button class="btn-danger btn-small" onclick="document.getElementById('${rowId}').remove()">✕</button>
+    `;
+    editor.appendChild(row);
+  }
+
+  function escapeAttr(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  function getHeadersFromEditor() {
+    const rows = document.querySelectorAll('#headersEditor .header-row');
+    const headers = [];
+    rows.forEach(row => {
+      const key = row.querySelector('.h-key').value.trim();
+      const value = row.querySelector('.h-value').value;
+      if (key) headers.push({ key, value });
+    });
+    return headers;
+  }
+
+  function clearRequestForm() {
+    document.getElementById('urlInput').value = '';
+    document.getElementById('bodyInput').value = '';
+    document.getElementById('methodSelect').value = 'GET';
+    document.getElementById('headersEditor').innerHTML = '';
+    defaultHeaders().forEach(h => addHeaderRow(h.key, h.value));
+  }
+
+  // ── Sub-tabs (Builder / Raw paste / Cookies) ──
+  function switchTab(tab) {
+    document.querySelectorAll('.tabs .tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'cookies') renderCookieJarPanel();
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  Cookie Jar — persisten per-domain via localStorage
+  //  (mirip session/cookie storage browser, khusus utk Repeater)
+  // ══════════════════════════════════════════════════════════
+  const COOKIE_JAR_KEY = 'phonegg_pen_cookiejar';
+
+  function loadCookieJar() {
+    try {
+      const raw = localStorage.getItem(COOKIE_JAR_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveCookieJar(jar) {
+    try {
+      localStorage.setItem(COOKIE_JAR_KEY, JSON.stringify(jar));
+    } catch (e) {
+      console.warn('Gagal menyimpan cookie jar:', e);
+    }
+  }
+
+  function getDomainFromUrl(url) {
+    try {
+      const u = new URL(url.startsWith('http') ? url : 'https://' + url);
+      return u.hostname.toLowerCase();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function getActiveDomain() {
+    const urlEl = document.getElementById('urlInput');
+    return getDomainFromUrl(urlEl ? urlEl.value.trim() : '');
+  }
+
+  // Bangun object {name: value} dari jar untuk 1 domain, dipakai saat kirim request
+  function getCookiesForDomain(domain) {
+    if (!domain) return {};
+    const jar = loadCookieJar();
+    const entry = jar[domain] || {};
+    const now = Date.now();
+    const result = {};
+    Object.keys(entry).forEach(name => {
+      const c = entry[name];
+      if (c.expiresAt && c.expiresAt < now) return; // sudah kedaluwarsa, jangan dikirim
+      result[name] = c.value;
+    });
+    return result;
+  }
+
+  // Simpan/replace set-cookies dari response ke jar domain terkait
+  function mergeSetCookiesIntoJar(finalUrl, setCookies) {
+    if (!Array.isArray(setCookies) || !setCookies.length) return;
+    const jar = loadCookieJar();
+    setCookies.forEach(sc => {
+      const domain = (sc.domain || getDomainFromUrl(finalUrl) || '').toLowerCase();
+      if (!domain || !sc.name) return;
+      if (!jar[domain]) jar[domain] = {};
+      let expiresAt = null;
+      if (sc.expires) {
+        const t = Date.parse(sc.expires);
+        if (!isNaN(t)) expiresAt = t;
+      }
+      jar[domain][sc.name] = {
+        value: sc.value || '',
+        path: sc.path || '/',
+        expiresAt,
+        secure: !!sc.secure,
+        httpOnly: !!sc.http_only,
+        sameSite: sc.same_site || null,
+      };
+    });
+    saveCookieJar(jar);
+  }
+
+  function deleteCookieFromJar(domain, name) {
+    const jar = loadCookieJar();
+    if (jar[domain]) {
+      delete jar[domain][name];
+      if (!Object.keys(jar[domain]).length) delete jar[domain];
+    }
+    saveCookieJar(jar);
+    renderCookieJarPanel();
+  }
+
+  function clearActiveDomainCookies() {
+    const domain = getActiveDomain();
+    if (!domain) { alert('Isi URL target dulu supaya domainnya diketahui'); return; }
+    if (!confirm(`Hapus semua cookie tersimpan untuk domain "${domain}"?`)) return;
+    const jar = loadCookieJar();
+    delete jar[domain];
+    saveCookieJar(jar);
+    renderCookieJarPanel();
+  }
+
+  function addManualCookieRow() {
+    const domain = getActiveDomain();
+    if (!domain) { alert('Isi URL target dulu supaya domainnya diketahui'); return; }
+    const jar = loadCookieJar();
+    if (!jar[domain]) jar[domain] = {};
+    let n = 1;
+    let newName = 'cookie_name';
+    while (jar[domain][newName]) { newName = 'cookie_name_' + (n++); }
+    jar[domain][newName] = { value: '', path: '/', expiresAt: null, secure: false, httpOnly: false, sameSite: null };
+    saveCookieJar(jar);
+    renderCookieJarPanel();
+  }
+
+  function updateCookieField(domain, oldName, field, value, inputEl) {
+    const jar = loadCookieJar();
+    if (!jar[domain] || !jar[domain][oldName]) return false;
+    if (field === 'name') {
+      const newName = value.trim();
+      if (!newName || newName === oldName) return false;
+      if (jar[domain][newName]) {
+        alert('Nama cookie sudah dipakai di domain ini');
+        if (inputEl) inputEl.value = oldName;
+        return false;
+      }
+      jar[domain][newName] = jar[domain][oldName];
+      delete jar[domain][oldName];
+      saveCookieJar(jar);
+      return true;
+    } else if (field === 'value') {
+      jar[domain][oldName].value = value;
+      saveCookieJar(jar);
+      return true;
+    }
+    return false;
+  }
+
+  function onUseCookieJarChanged() {
+    const tab = getActiveTab();
+    const jarCb = document.getElementById('useCookieJarCheckbox');
+    if (tab && jarCb) tab.useCookieJar = jarCb.checked;
+  }
+
+  function renderCookieJarPanel() {
+    const domainEl = document.getElementById('cookieJarDomain');
+    const listEl = document.getElementById('cookieJarList');
+    if (!domainEl || !listEl) return;
+
+    const domain = getActiveDomain();
+    domainEl.textContent = domain || '(isi URL dulu)';
+
+    if (!domain) {
+      listEl.innerHTML = '<div class="empty-state" style="padding:0.75rem;">Isi URL target untuk melihat cookie jar domain tsb.</div>';
+      return;
+    }
+
+    const jar = loadCookieJar();
+    const entry = jar[domain] || {};
+    const names = Object.keys(entry);
+
+    if (!names.length) {
+      listEl.innerHTML = '<div class="empty-state" style="padding:0.75rem;">Belum ada cookie tersimpan untuk domain ini.</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    names.forEach(name => {
+      const c = entry[name];
+      const row = document.createElement('div');
+      row.className = 'cookie-row';
+      const flags = [];
+      if (c.secure) flags.push('<span class="cookie-flag">Secure</span>');
+      if (c.httpOnly) flags.push('<span class="cookie-flag">HttpOnly</span>');
+      if (c.expiresAt) flags.push(`<span class="cookie-flag" title="Kedaluwarsa">${new Date(c.expiresAt).toLocaleDateString()}</span>`);
+      row.innerHTML = `
+        <input type="text" class="ck-name" value="${escapeAttr(name)}" placeholder="nama cookie">
+        <input type="text" class="ck-value" value="${escapeAttr(c.value || '')}" placeholder="nilai">
+        <span class="cookie-flags">${flags.join('')}</span>
+        <button class="btn-danger btn-small" title="Hapus cookie ini">✕</button>
+      `;
+      const nameInput = row.querySelector('.ck-name');
+      const valueInput = row.querySelector('.ck-value');
+      // Simpan nama saat ini di closure lewat objek mutable, supaya kalau nama
+      // di-rename lalu value diedit lagi, kita tidak memakai nama lama yang
+      // sudah tidak ada di jar (bug lama: closure stale setelah rename).
+      const ref = { current: name };
+      nameInput.addEventListener('change', () => {
+        const renamed = updateCookieField(domain, ref.current, 'name', nameInput.value, nameInput);
+        if (renamed) ref.current = nameInput.value.trim();
+      });
+      valueInput.addEventListener('input', () => updateCookieField(domain, ref.current, 'value', valueInput.value));
+      row.querySelector('.btn-danger').addEventListener('click', () => deleteCookieFromJar(domain, ref.current));
+      listEl.appendChild(row);
+    });
+  }
+
+  // ── Raw request parsing ──
+  function parseRawIntoBuilder() {
+    const raw = document.getElementById('rawInput').value;
+    if (!raw || !raw.trim()) {
+      alert('Paste raw request atau perintah cURL dulu ya');
+      return;
+    }
+
+    // Deteksi perintah cURL (mis. hasil "Copy as cURL" dari DevTools) —
+    // ini diparse langsung di client, tidak perlu ke backend.
+    if (/^\s*curl\s/i.test(raw)) {
+      const parsed = parseCurlCommand(raw.trim());
+      if (!parsed.ok) { alert('Gagal parsing cURL: ' + parsed.error); return; }
+      document.getElementById('methodSelect').value = parsed.method;
+      document.getElementById('urlInput').value = parsed.url;
+      document.getElementById('bodyInput').value = parsed.body || '';
+      const editor = document.getElementById('headersEditor');
+      editor.innerHTML = '';
+      (parsed.headers.length ? parsed.headers : defaultHeaders()).forEach(h => addHeaderRow(h.key, h.value));
+      switchTab('builder');
+      return;
+    }
+
+    fetch('/api/v1/pen/repeater/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw })
+    })
+    .then(async r => {
+      const payload = await r.json().catch(() => null);
+      if (!r.ok || !payload || payload.status === 'error') {
+        throw new Error((payload && payload.message) || `Gagal parsing (HTTP ${r.status})`);
+      }
+      return payload.data;
+    })
+    .then(data => {
+      document.getElementById('methodSelect').value = data.method;
+      document.getElementById('urlInput').value = data.url;
+      document.getElementById('bodyInput').value = data.body || '';
+
+      const editor = document.getElementById('headersEditor');
+      editor.innerHTML = '';
+      const headers = data.headers || {};
+      Object.keys(headers).forEach(k => addHeaderRow(k, headers[k]));
+
+      switchTab('builder');
+    })
+    .catch(err => alert('Gagal parsing raw request: ' + err.message));
+  }
+
+  // ── Kirim request ──
+  function sendRepeaterRequest() {
+    const tab = getActiveTab();
+    if (!tab) return;
+    syncFormIntoActiveTab();
+
+    const url = tab.url.trim();
+    if (!url) {
+      alert('URL target wajib diisi');
+      return;
+    }
+
+    const sendBtn = document.getElementById('sendBtn');
+    const panel = document.getElementById('responsePanelContent');
+    sendBtn.disabled = true;
+    panel.innerHTML = '<div class="rep-loading"><div class="spinner-sm"></div><span>Mengirim request...</span></div>';
+    document.getElementById('copyResponseBtn').disabled = true;
+
+    const domain = getDomainFromUrl(url);
+    const cookiesToSend = (tab.useCookieJar !== false) ? getCookiesForDomain(domain) : {};
+
+    fetch('/api/v1/pen/repeater', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url, method: tab.method, headers: tab.headers, body: tab.body,
+        timeout: tab.timeout, follow_redirects: tab.followRedirects,
+        cookies: cookiesToSend
+      })
+    })
+    .then(async r => {
+      const payload = await r.json().catch(() => null);
+      if (!r.ok || !payload || payload.status === 'error') {
+        throw new Error((payload && payload.message) || `Request gagal (HTTP ${r.status})`);
+      }
+      return payload.data;
+    })
+    .then(data => {
+      tab.response = data.response;
+      tab.error = null;
+      if (data.response && Array.isArray(data.response.set_cookies) && data.response.set_cookies.length) {
+        mergeSetCookiesIntoJar(data.response.final_url || url, data.response.set_cookies);
+        const cookiesTabActive = document.getElementById('tab-cookies') && document.getElementById('tab-cookies').classList.contains('active');
+        if (cookiesTabActive) renderCookieJarPanel();
+      }
+      if (tab.name.startsWith('Req ')) {
+        tab.name = guessTabName(tab.method, url);
+      }
+      // Hanya sentuh panel response kalau tab ini masih yang aktif —
+      // mencegah response dari tab lain nyasar nimpa tab yang sedang dilihat.
+      if (getActiveTab() === tab) renderResponse(tab.response);
+      renderTabBar();
+      loadHistoryList();
+    })
+    .catch(err => {
+      tab.error = err.message;
+      tab.response = null;
+      if (getActiveTab() === tab) {
+        panel.innerHTML = `<div class="error-message">${escapeHtml(err.message)}</div>`;
+      }
+      renderTabBar();
+      loadHistoryList();
+    })
+    .finally(() => {
+      sendBtn.disabled = false;
+    });
+  }
+
+  function guessTabName(method, url) {
+    try {
+      const u = new URL(url.startsWith('http') ? url : 'https://' + url);
+      const label = (u.pathname && u.pathname !== '/') ? u.pathname : u.hostname;
+      return `${method} ${label}`.slice(0, 24);
+    } catch (e) {
+      return `${method} ${url}`.slice(0, 24);
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  cURL export / import
+  // ══════════════════════════════════════════════════════════
+  function shellQuote(str) {
+    return `'${String(str == null ? '' : str).replace(/'/g, `'\\''`)}'`;
+  }
+
+  function buildCurlFromTab(tab) {
+    const parts = ['curl', shellQuote(tab.url || '')];
+    if (tab.method && tab.method !== 'GET') parts.push('-X', tab.method);
+    (tab.headers || []).forEach(h => {
+      if (h.key) parts.push('-H', shellQuote(`${h.key}: ${h.value || ''}`));
+    });
+    const domain = getDomainFromUrl(tab.url || '');
+    if (tab.useCookieJar !== false && domain) {
+      const cookies = getCookiesForDomain(domain);
+      const cookieStr = Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ');
+      if (cookieStr) parts.push('-b', shellQuote(cookieStr));
+    }
+    if (tab.body) parts.push('--data-raw', shellQuote(tab.body));
+    return parts.join(' ');
+  }
+
+  function copyRequestAsCurl() {
+    syncFormIntoActiveTab();
+    const tab = getActiveTab();
+    if (!tab || !tab.url) { alert('Isi URL target dulu'); return; }
+    const curl = buildCurlFromTab(tab);
+    navigator.clipboard.writeText(curl)
+      .then(() => alert('Perintah cURL disalin ke clipboard'))
+      .catch(() => prompt('Salin manual perintah cURL berikut:', curl));
+  }
+
+  // Parser cURL sederhana di sisi client — cukup untuk kasus umum
+  // "Copy as cURL" dari DevTools browser (bukan parser shell lengkap).
+  function parseCurlCommand(raw) {
+    const tokens = [];
+    const re = /"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|(\S+)/g;
+    let m;
+    while ((m = re.exec(raw)) !== null) {
+      tokens.push((m[1] !== undefined ? m[1].replace(/\\(.)/g, '$1')
+        : m[2] !== undefined ? m[2]
+        : m[3]));
+    }
+    if (!tokens.length || tokens[0].toLowerCase() !== 'curl') {
+      return { ok: false, error: 'Bukan perintah cURL yang valid (harus diawali "curl")' };
+    }
+
+    let url = '', method = null, headers = [], body = null, cookieHeaderVal = null;
+    for (let i = 1; i < tokens.length; i++) {
+      const t = tokens[i];
+      if (t === '-X' || t === '--request') { method = tokens[++i]; }
+      else if (t === '-H' || t === '--header') {
+        const h = tokens[++i] || '';
+        const idx = h.indexOf(':');
+        if (idx > -1) headers.push({ key: h.slice(0, idx).trim(), value: h.slice(idx + 1).trim() });
+      }
+      else if (t === '-d' || t === '--data' || t === '--data-raw' || t === '--data-binary' || t === '--data-urlencode') {
+        body = tokens[++i] || '';
+        if (!method) method = 'POST';
+      }
+      else if (t === '-b' || t === '--cookie') { cookieHeaderVal = tokens[++i] || ''; }
+      else if (t === '--url') { url = tokens[++i] || ''; }
+      else if (t === '-A' || t === '--user-agent') { headers.push({ key: 'User-Agent', value: tokens[++i] || '' }); }
+      else if (t === '-u' || t === '--user') { i++; /* auth dilewati, tidak didukung Repeater ini */ }
+      else if (!t.startsWith('-') && !url) { url = t; }
+    }
+    if (!url) return { ok: false, error: 'URL tidak ditemukan di perintah cURL' };
+    if (cookieHeaderVal) headers.push({ key: 'Cookie', value: cookieHeaderVal });
+    return { ok: true, method: (method || 'GET').toUpperCase(), url, headers, body: body || '' };
+  }
+
+  function statusClass(code) {
+    if (!code) return 'status-err';
+    if (code >= 200 && code < 300) return 'status-2xx';
+    if (code >= 300 && code < 400) return 'status-3xx';
+    return 'status-4xx';
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  Response viewer: Pretty / Raw / Hex + search
+  // ══════════════════════════════════════════════════════════
+  function renderResponse(resp) {
+    const panel = document.getElementById('responsePanelContent');
+    if (!resp) {
+      panel.innerHTML = '<div class="error-message">Response kosong / tidak valid</div>';
+      return;
+    }
+
+    lastResponseBody = resp.body || '';
+    document.getElementById('copyResponseBtn').disabled = !lastResponseBody;
+
+    const headersText = Object.entries(resp.headers || {})
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n');
+
+    const truncatedNote = resp.body_truncated
+      ? `<div style="color:#f59e0b;font-size:0.75rem;margin-top:0.3rem;">⚠️ Body dipotong karena melebihi batas ukuran yang ditampilkan.</div>`
+      : '';
+
+    currentViewMode = 'pretty';
+
+    panel.innerHTML = `
+      <div class="response-meta">
+        <span class="status-badge ${statusClass(resp.status_code)}">${resp.status_code || '—'} ${escapeHtml(resp.reason || '')}</span>
+        <span>⏱ ${resp.elapsed_ms ?? '—'} ms</span>
+        <span>📦 ${resp.body_size_bytes ?? 0} bytes</span>
+        ${resp.redirected ? '<span>↪ redirected</span>' : ''}
+      </div>
+      <div>
+        <label class="field-label">Headers</label>
+        <div class="response-headers-view">${escapeHtml(headersText || '(tidak ada header)')}</div>
+      </div>
+      <div>
+        <div class="body-viewer-toolbar">
+          <label class="field-label" style="margin-right:auto;">Body</label>
+          <div class="view-toggle">
+            <button class="vt-btn active" data-mode="pretty" onclick="setViewMode('pretty')">Pretty</button>
+            <button class="vt-btn" data-mode="raw" onclick="setViewMode('raw')">Raw</button>
+            <button class="vt-btn" data-mode="hex" onclick="setViewMode('hex')">Hex</button>
+          </div>
+        </div>
+        <div class="search-bar" id="searchBar">
+          <input type="text" id="searchInput" placeholder="Cari di body respons..." oninput="renderResponseBody()">
+          <button class="btn-small btn-ghost" onclick="searchPrev()" title="Sebelumnya">↑</button>
+          <button class="btn-small btn-ghost" onclick="searchNext()" title="Berikutnya">↓</button>
+          <span id="searchCount" class="search-count"></span>
+        </div>
+        <pre class="response-body-viewer"><code id="responseBodyCode"></code></pre>
+        ${truncatedNote}
+      </div>
+    `;
+
+    renderResponseBody();
+  }
+
+  function setViewMode(mode) {
+    currentViewMode = mode;
+    document.querySelectorAll('.vt-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+    renderResponseBody();
+  }
+
+  function detectFormat(text, contentType) {
+    const ct = (contentType || '').toLowerCase();
+    const trimmed = (text || '').trim();
+    if (ct.includes('json')) return 'json';
+    if (ct.includes('html')) return 'html';
+    if (ct.includes('xml')) return 'xml';
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) return 'json';
+    if (trimmed.startsWith('<')) return trimmed.toLowerCase().includes('<html') ? 'html' : 'xml';
+    return 'plaintext';
+  }
+
+  function prettyFormat(text, contentType) {
+    const fmt = detectFormat(text, contentType);
+    if (fmt === 'json') {
+      try {
+        return { text: JSON.stringify(JSON.parse(text), null, 2), lang: 'json' };
+      } catch (e) {
+        return { text: text, lang: 'json' };
+      }
+    }
+    return { text: text, lang: fmt };
+  }
+
+  function toHexDump(str) {
+    const bytes = new TextEncoder().encode(str || '');
+    const maxBytes = 8192;
+    const truncated = bytes.length > maxBytes;
+    const view = truncated ? bytes.slice(0, maxBytes) : bytes;
+    const lines = [];
+    for (let i = 0; i < view.length; i += 16) {
+      const chunk = view.slice(i, i + 16);
+      const hexPart = Array.from(chunk).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      const hexPadded = hexPart.padEnd(16 * 3 - 1, ' ');
+      const asciiPart = Array.from(chunk).map(b => (b >= 32 && b < 127) ? String.fromCharCode(b) : '.').join('');
+      const offset = i.toString(16).padStart(8, '0');
+      lines.push(`${offset}  ${hexPadded}  ${asciiPart}`);
+    }
+    if (truncated) lines.push(`\n... (dipotong, menampilkan ${maxBytes} byte pertama dari ${bytes.length} byte)`);
+    if (!view.length) lines.push('(body kosong)');
+    return lines.join('\n');
+  }
+
+  function renderResponseBody() {
+    const tab = getActiveTab();
+    if (!tab || !tab.response) return;
+    const resp = tab.response;
+    const raw = resp.body || '';
+    const codeEl = document.getElementById('responseBodyCode');
+    if (!codeEl) return;
+    const searchBar = document.getElementById('searchBar');
+    const searchInput = document.getElementById('searchInput');
+    const query = searchInput ? searchInput.value.trim() : '';
+
+    if (currentViewMode === 'hex') {
+      if (searchBar) searchBar.style.display = 'none';
+      codeEl.className = 'hex-code';
+      codeEl.textContent = toHexDump(raw);
+      return;
+    }
+
+    if (searchBar) searchBar.style.display = 'flex';
+
+    const formatted = currentViewMode === 'pretty' ? prettyFormat(raw, resp.content_type) : { text: raw, lang: detectFormat(raw, resp.content_type) };
+
+    if (query) {
+      codeEl.className = '';
+      renderSearchHighlight(codeEl, formatted.text, query);
+    } else {
+      codeEl.className = 'language-' + formatted.lang;
+      codeEl.textContent = formatted.text;
+      searchMatches = [];
+      searchActiveIndex = -1;
+      updateSearchCount(0, 0);
+      if (window.hljs) {
+        try { hljs.highlightElement(codeEl); } catch (e) { /* biarkan plain text kalau gagal */ }
+      }
+    }
+  }
+
+  function renderSearchHighlight(el, text, query) {
+    const q = query.toLowerCase();
+    const lower = (text || '').toLowerCase();
+    let html = '';
+    let i = 0;
+    let count = 0;
+    if (!q) {
+      el.textContent = text;
+      searchMatches = [];
+      searchActiveIndex = -1;
+      updateSearchCount(0, 0);
+      return;
+    }
+    while (true) {
+      const idx = lower.indexOf(q, i);
+      if (idx === -1) {
+        html += escapeHtml(text.slice(i));
+        break;
+      }
+      html += escapeHtml(text.slice(i, idx));
+      html += `<mark class="search-mark" data-idx="${count}">${escapeHtml(text.slice(idx, idx + q.length))}</mark>`;
+      count++;
+      i = idx + q.length;
+    }
+    el.innerHTML = html;
+    searchMatches = Array.from(el.querySelectorAll('mark.search-mark'));
+    searchActiveIndex = searchMatches.length ? 0 : -1;
+    highlightActiveMatch();
+    updateSearchCount(searchActiveIndex + 1, searchMatches.length);
+  }
+
+  function highlightActiveMatch() {
+    searchMatches.forEach((m, idx) => m.classList.toggle('search-mark-active', idx === searchActiveIndex));
+    if (searchActiveIndex >= 0 && searchMatches[searchActiveIndex]) {
+      searchMatches[searchActiveIndex].scrollIntoView({ block: 'center' });
+    }
+  }
+
+  function searchNext() {
+    if (!searchMatches.length) return;
+    searchActiveIndex = (searchActiveIndex + 1) % searchMatches.length;
+    highlightActiveMatch();
+    updateSearchCount(searchActiveIndex + 1, searchMatches.length);
+  }
+
+  function searchPrev() {
+    if (!searchMatches.length) return;
+    searchActiveIndex = (searchActiveIndex - 1 + searchMatches.length) % searchMatches.length;
+    highlightActiveMatch();
+    updateSearchCount(searchActiveIndex + 1, searchMatches.length);
+  }
+
+  function updateSearchCount(cur, total) {
+    const el = document.getElementById('searchCount');
+    if (!el) return;
+    const input = document.getElementById('searchInput');
+    if (!total && input && !input.value) { el.textContent = ''; return; }
+    el.textContent = total ? `${cur}/${total}` : '0/0';
+  }
+
+  function copyResponseBody() {
+    if (!lastResponseBody) return;
+    navigator.clipboard.writeText(lastResponseBody)
+      .then(() => {
+        const btn = document.getElementById('copyResponseBtn');
+        const original = btn.textContent;
+        btn.textContent = '✓ Disalin';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      })
+      .catch(() => alert('Gagal menyalin ke clipboard'));
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  Compare / Diff — bandingkan 2 response dari tab berbeda
+  // ══════════════════════════════════════════════════════════
+  function openCompareModal() {
+    const withResp = tabs.filter(t => t.response);
+    if (withResp.length < 2) {
+      alert('Minimal butuh 2 tab yang sudah punya response buat dibandingkan.');
+      return;
+    }
+    const selA = document.getElementById('compareTabA');
+    const selB = document.getElementById('compareTabB');
+    const optionsHtml = withResp.map(t =>
+      `<option value="${t.id}">${escapeHtml(t.name)} — ${t.response.status_code || '?'}</option>`
+    ).join('');
+    selA.innerHTML = optionsHtml;
+    selB.innerHTML = optionsHtml;
+    // Default: bandingkan 2 tab terakhir yang punya response
+    selA.value = withResp[withResp.length - 2].id;
+    selB.value = withResp[withResp.length - 1].id;
+    document.getElementById('compareResult').innerHTML = '';
+    document.getElementById('compareModalBackdrop').style.display = 'flex';
+  }
+
+  function closeCompareModal() {
+    document.getElementById('compareModalBackdrop').style.display = 'none';
+  }
+
+  // Diff baris sederhana berbasis LCS (Longest Common Subsequence) —
+  // cukup buat body/headers response ukuran wajar, dibatasi biar tidak berat.
+  function computeLineDiff(linesA, linesB) {
+    const MAX_LINES = 2000;
+    const truncated = linesA.length > MAX_LINES || linesB.length > MAX_LINES;
+    if (truncated) {
+      linesA = linesA.slice(0, MAX_LINES);
+      linesB = linesB.slice(0, MAX_LINES);
+    }
+    const n = linesA.length, m = linesB.length;
+    const dp = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) {
+      for (let j = m - 1; j >= 0; j--) {
+        dp[i][j] = linesA[i] === linesB[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    const result = [];
+    let i = 0, j = 0;
+    while (i < n && j < m) {
+      if (linesA[i] === linesB[j]) { result.push({ type: 'same', text: linesA[i] }); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { result.push({ type: 'del', text: linesA[i] }); i++; }
+      else { result.push({ type: 'add', text: linesB[j] }); j++; }
+    }
+    while (i < n) { result.push({ type: 'del', text: linesA[i] }); i++; }
+    while (j < m) { result.push({ type: 'add', text: linesB[j] }); j++; }
+    if (truncated) result.push({ type: 'same', text: '… (dipotong, hanya menampilkan ' + MAX_LINES + ' baris pertama)' });
+    return result;
+  }
+
+  function renderDiffLines(diffLines) {
+    return diffLines.map(d => {
+      const prefix = d.type === 'add' ? '+ ' : d.type === 'del' ? '- ' : '  ';
+      const cls = d.type === 'add' ? 'diff-add' : d.type === 'del' ? 'diff-del' : 'diff-same';
+      return `<div class="${cls}">${escapeHtml(prefix + d.text)}</div>`;
+    }).join('');
+  }
+
+  function runCompare() {
+    const idA = document.getElementById('compareTabA').value;
+    const idB = document.getElementById('compareTabB').value;
+    const tabA = tabs.find(t => t.id === idA);
+    const tabB = tabs.find(t => t.id === idB);
+    const resultEl = document.getElementById('compareResult');
+    if (!tabA || !tabB || !tabA.response || !tabB.response) {
+      resultEl.innerHTML = '<div class="error-message">Salah satu tab tidak punya response.</div>';
+      return;
+    }
+    const rA = tabA.response, rB = tabB.response;
+
+    const statusRow = `
+      <div class="compare-cols">
+        <div class="compare-col">
+          <div class="compare-col-title">${escapeHtml(tabA.name)}</div>
+          <div>Status: <strong>${rA.status_code || '—'}</strong> · ${rA.elapsed_ms ?? '—'} ms · ${rA.body_size_bytes ?? 0} bytes</div>
+        </div>
+        <div class="compare-col">
+          <div class="compare-col-title">${escapeHtml(tabB.name)}</div>
+          <div>Status: <strong>${rB.status_code || '—'}</strong> · ${rB.elapsed_ms ?? '—'} ms · ${rB.body_size_bytes ?? 0} bytes</div>
+        </div>
+      </div>`;
+
+    const headerLinesA = Object.entries(rA.headers || {}).map(([k, v]) => `${k}: ${v}`).sort();
+    const headerLinesB = Object.entries(rB.headers || {}).map(([k, v]) => `${k}: ${v}`).sort();
+    const headerDiff = computeLineDiff(headerLinesA, headerLinesB);
+
+    const bodyLinesA = (rA.body || '').split('\n');
+    const bodyLinesB = (rB.body || '').split('\n');
+    const bodyDiff = computeLineDiff(bodyLinesA, bodyLinesB);
+
+    resultEl.innerHTML = `
+      ${statusRow}
+      <div style="margin-top:0.75rem;">
+        <div class="field-label">Diff Headers</div>
+        <div class="diff-view">${renderDiffLines(headerDiff) || '<div class="diff-same">(sama persis)</div>'}</div>
+      </div>
+      <div style="margin-top:0.75rem;">
+        <div class="field-label">Diff Body</div>
+        <div class="diff-view">${renderDiffLines(bodyDiff) || '<div class="diff-same">(sama persis)</div>'}</div>
+      </div>
+    `;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  Loop Send — kirim request tab aktif berulang kali berurutan
+  // ══════════════════════════════════════════════════════════
+  let loopRunning = false;
+
+  function openLoopModal() {
+    syncFormIntoActiveTab();
+    const tab = getActiveTab();
+    if (!tab || !tab.url || !tab.url.trim()) {
+      alert('Isi URL target dulu di tab yang aktif sebelum pakai Loop Send.');
+      return;
+    }
+    document.getElementById('loopSummary').innerHTML = '';
+    document.getElementById('loopResultList').innerHTML = '';
+    document.getElementById('loopResultDetail').innerHTML = '';
+    document.getElementById('loopModalBackdrop').style.display = 'flex';
+  }
+
+  function closeLoopModal() {
+    if (loopRunning && !confirm('Loop masih berjalan, tutup paksa?')) return;
+    loopRunning = false;
+    document.getElementById('loopModalBackdrop').style.display = 'none';
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function runLoopSend() {
+    if (loopRunning) return;
+    const tab = getActiveTab();
+    if (!tab || !tab.url) { alert('Isi URL target dulu'); return; }
+
+    let count = parseInt(document.getElementById('loopCount').value, 10) || 1;
+    count = Math.max(1, Math.min(count, 20));
+    let delay = parseInt(document.getElementById('loopDelay').value, 10) || 0;
+    delay = Math.max(0, Math.min(delay, 10000));
+
+    const domain = getDomainFromUrl(tab.url);
+    const cookiesToSend = (tab.useCookieJar !== false) ? getCookiesForDomain(domain) : {};
+
+    const startBtn = document.getElementById('loopStartBtn');
+    const summaryEl = document.getElementById('loopSummary');
+    const listEl = document.getElementById('loopResultList');
+    const detailEl = document.getElementById('loopResultDetail');
+    listEl.innerHTML = '';
+    detailEl.innerHTML = '';
+
+    loopRunning = true;
+    startBtn.disabled = true;
+    startBtn.textContent = '⏳ Mengirim...';
+
+    const results = [];
+    for (let n = 1; n <= count; n++) {
+      if (!loopRunning) break;
+      summaryEl.textContent = `Mengirim ${n} / ${count}...`;
+      let entry;
+      try {
+        const r = await fetch('/api/v1/pen/repeater', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: tab.url, method: tab.method, headers: tab.headers, body: tab.body,
+            timeout: tab.timeout, follow_redirects: tab.followRedirects,
+            cookies: cookiesToSend
+          })
+        });
+        const payload = await r.json().catch(() => null);
+        if (!r.ok || !payload || payload.status === 'error') {
+          entry = { n, ok: false, error: (payload && payload.message) || `HTTP ${r.status}`, response: null };
+        } else {
+          entry = { n, ok: true, response: payload.data.response, error: null };
+        }
+      } catch (e) {
+        entry = { n, ok: false, error: e.message, response: null };
+      }
+      results.push(entry);
+
+      const row = document.createElement('div');
+      row.className = 'loop-result-item';
+      const badge = entry.ok
+        ? `<span class="status-badge ${statusClass(entry.response.status_code)}" style="font-size:0.68rem;padding:0.1rem 0.4rem;">${entry.response.status_code}</span>`
+        : `<span class="status-badge status-err" style="font-size:0.68rem;padding:0.1rem 0.4rem;">ERR</span>`;
+      row.innerHTML = `<strong>#${entry.n}</strong> ${badge} <span>${entry.ok ? (entry.response.elapsed_ms + ' ms · ' + entry.response.body_size_bytes + ' bytes') : escapeHtml(entry.error)}</span>`;
+      row.addEventListener('click', () => showLoopDetail(entry));
+      listEl.appendChild(row);
+
+      if (n < count && delay > 0) await sleep(delay);
+    }
+
+    loopRunning = false;
+    startBtn.disabled = false;
+    startBtn.textContent = '▶ Mulai';
+
+    const okCount = results.filter(r => r.ok).length;
+    const times = results.filter(r => r.ok).map(r => r.response.elapsed_ms);
+    const avg = times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
+    summaryEl.innerHTML = `Selesai: <strong>${okCount}/${results.length}</strong> sukses · rata-rata <strong>${avg} ms</strong>. Klik salah satu hasil di bawah buat lihat detail response.`;
+    loadHistoryList();
+  }
+
+  function showLoopDetail(entry) {
+    const detailEl = document.getElementById('loopResultDetail');
+    if (!entry.ok) {
+      detailEl.innerHTML = `<div class="error-message">Percobaan #${entry.n}: ${escapeHtml(entry.error)}</div>`;
+      return;
+    }
+    const resp = entry.response;
+    const headersText = Object.entries(resp.headers || {}).map(([k, v]) => `${k}: ${v}`).join('\n');
+    detailEl.innerHTML = `
+      <div class="field-label">Detail percobaan #${entry.n}</div>
+      <div class="response-meta">
+        <span class="status-badge ${statusClass(resp.status_code)}">${resp.status_code || '—'} ${escapeHtml(resp.reason || '')}</span>
+        <span>⏱ ${resp.elapsed_ms ?? '—'} ms</span>
+        <span>📦 ${resp.body_size_bytes ?? 0} bytes</span>
+      </div>
+      <div class="response-headers-view" style="margin-top:0.4rem;">${escapeHtml(headersText || '(tidak ada header)')}</div>
+      <pre class="response-body-viewer" style="margin-top:0.4rem;"><code>${escapeHtml((resp.body || '').slice(0, 4000))}</code></pre>
+    `;
+  }
+
+
+  // ══════════════════════════════════════════════════════════
+  function loadHistoryList() {
+    fetch('/api/v1/pen/repeater/history')
+      .then(r => r.json())
+      .then(payload => {
+        const items = (payload && payload.data && payload.data.history) || [];
+        renderHistoryList(items);
+      })
+      .catch(() => {
+        const list = document.getElementById('historyList');
+        if (list) list.innerHTML = '<div class="empty-state" style="padding:1rem;">Gagal memuat riwayat.</div>';
+      });
+  }
+
+  function renderHistoryList(items) {
+    const list = document.getElementById('historyList');
+    if (!list) return;
+    if (!items.length) {
+      list.innerHTML = '<div class="empty-state" style="padding:1rem;">Belum ada riwayat request.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    items.forEach(it => {
+      const el = document.createElement('div');
+      el.className = 'hist-item';
+      const badge = it.status_code
+        ? `<span class="status-badge ${statusClass(it.status_code)}" style="font-size:0.68rem;padding:0.1rem 0.4rem;">${it.status_code}</span>`
+        : `<span class="status-badge status-err" style="font-size:0.68rem;padding:0.1rem 0.4rem;">ERR</span>`;
+      el.innerHTML = `
+        <div class="hist-item-top">
+          <span class="hist-method">${escapeHtml(it.method || '')}</span>
+          ${badge}
+          <span class="hist-del" onclick="deleteHistoryItem('${it.id}', event)" title="Hapus">✕</span>
+        </div>
+        <div class="hist-url" title="${escapeAttr(it.url || '')}">${escapeHtml(it.url || '')}</div>
+        <div class="hist-time">${escapeHtml(it.time || '')}</div>
+      `;
+      el.addEventListener('click', () => loadHistoryIntoNewTab(it.id));
+      list.appendChild(el);
+    });
+  }
+
+  function loadHistoryIntoNewTab(hid) {
+    fetch('/api/v1/pen/repeater/history/' + encodeURIComponent(hid))
+      .then(async r => {
+        const payload = await r.json().catch(() => null);
+        if (!r.ok || !payload || payload.status === 'error') {
+          throw new Error((payload && payload.message) || 'Gagal memuat riwayat');
+        }
+        return payload.data;
+      })
+      .then(entry => {
+        if (activeTabId) syncFormIntoActiveTab();
+        const method = entry.request ? entry.request.method : entry.method;
+        const url = entry.request ? entry.request.url : entry.url;
+        const headers = (entry.request && entry.request.headers)
+          ? Object.entries(entry.request.headers).map(([key, value]) => ({ key, value }))
+          : defaultHeaders();
+        const tab = createTab({
+          name: guessTabName(method, url || ''),
+          method: method || 'GET',
+          url: url || '',
+          headers,
+          body: entry.request ? (entry.request.body || '') : '',
+          response: entry.response || null,
+          error: entry.error || null,
+        });
+        switchToTab(tab.id);
+      })
+      .catch(err => alert('Gagal memuat riwayat: ' + err.message));
+  }
+
+  function deleteHistoryItem(hid, ev) {
+    if (ev) ev.stopPropagation();
+    fetch('/api/v1/pen/repeater/history/' + encodeURIComponent(hid), { method: 'DELETE' })
+      .then(() => loadHistoryList())
+      .catch(() => {});
+  }
+
+  function clearAllHistory() {
+    if (!confirm('Hapus semua riwayat request?')) return;
+    fetch('/api/v1/pen/repeater/history', { method: 'DELETE' })
+      .then(() => loadHistoryList())
+      .catch(() => {});
+  }
+
+  function toggleHistorySidebar(forceOpen) {
+    const sb = document.getElementById('repSidebar');
+    const backdrop = document.getElementById('repSidebarBackdrop');
+    if (!sb) return;
+    const willOpen = typeof forceOpen === 'boolean' ? forceOpen : sb.classList.contains('collapsed');
+    sb.classList.toggle('collapsed', !willOpen);
+    if (backdrop) backdrop.classList.toggle('active', willOpen && window.innerWidth < 900);
+  }
+
+  window.addEventListener('resize', function () {
+    const backdrop = document.getElementById('repSidebarBackdrop');
+    if (backdrop && window.innerWidth >= 900) backdrop.classList.remove('active');
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      const compareBackdrop = document.getElementById('compareModalBackdrop');
+      const loopBackdrop = document.getElementById('loopModalBackdrop');
+      if (compareBackdrop && compareBackdrop.style.display === 'flex') { closeCompareModal(); return; }
+      if (loopBackdrop && loopBackdrop.style.display === 'flex') { closeLoopModal(); return; }
+      const sb = document.getElementById('repSidebar');
+      if (sb && !sb.classList.contains('collapsed') && window.innerWidth < 900) {
+        toggleHistorySidebar(false);
+      }
+    }
+    // Ctrl/Cmd+Enter: kirim request dari mana saja di panel builder (mirip Burp/Postman)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      const sendBtn = document.getElementById('sendBtn');
+      if (sendBtn && !sendBtn.disabled) {
+        e.preventDefault();
+        sendRepeaterRequest();
+      }
+    }
+  });
+
+  // ══════════════════════════════════════════════════════════
+  //  Init
+  // ══════════════════════════════════════════════════════════
+  document.addEventListener('DOMContentLoaded', function() {
+    const sb = document.getElementById('repSidebar');
+    if (sb && window.innerWidth < 900) sb.classList.add('collapsed');
+
+    const urlEl = document.getElementById('urlInput');
+    if (urlEl) {
+      urlEl.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') sendRepeaterRequest();
+      });
+      urlEl.addEventListener('input', function() {
+        if (document.getElementById('tab-cookies') && document.getElementById('tab-cookies').classList.contains('active')) {
+          renderCookieJarPanel();
+        }
+      });
+    }
+  });
+
+  const firstTab = createTab();
+  switchToTab(firstTab.id);
+  loadHistoryList();
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}CORS Checker — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">🛡️</span> CORS Misconfiguration Checker</div>
+    <div class="page-subtitle">Deteksi wildcard origin, reflection, null origin, & credentials</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">URL</label>
+      <input name="cors_target" class="form-input" placeholder="https://target.com" value="{{ cors_target or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="🛡️ Check CORS">🛡️ Check CORS</button>
+  </form>
+</div>
+{% if cors_error %}<div class="alert alert-error">{{ cors_error }}</div>{% endif %}
+{% if cors_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>CORS Analysis</h3></div>
+  <div class="result-body">
+    <div class="stat-grid">
+      <div class="stat-tile {% if cors_result.vulnerable %}danger{% else %}success{% endif %}">
+        <div class="value">{% if cors_result.vulnerable %}Vulnerable{% else %}Safe{% endif %}</div><div class="label">Status</div>
+      </div>
+      <div class="stat-tile"><div class="value">{{ cors_result.severity|upper }}</div><div class="label">Severity</div></div>
+      <div class="stat-tile"><div class="value">{{ cors_result.findings|length }}</div><div class="label">Findings</div></div>
+    </div>
+    <div class="alert alert-{% if cors_result.vulnerable %}error{% else %}info{% endif %}">{{ cors_result.summary }}</div>
+    {% if cors_result.findings %}
+    {% for f in cors_result.findings %}
+    <div class="card" style="margin-bottom:.75rem;border-color:var(--danger)">
+      <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem">Origin: <b>{{ f.origin_tested }}</b></div>
+      <div style="font-size:.8rem;color:var(--text-secondary);margin-bottom:.5rem">ACAO: <code>{{ f.acao }}</code> | ACAC: <code>{{ f.acac }}</code></div>
+      {% for issue in f.issues %}<div class="alert alert-warning" style="margin-bottom:.25rem">{{ issue }}</div>{% endfor %}
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

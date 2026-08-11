@@ -1,0 +1,33 @@
+# ── Rahasia / kredensial — JANGAN pernah di-commit ──
+.env
+.evn
+*.env
+.env.*
+!.env.example
+
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+
+# ── Log & runtime ──
+*.log
+phonegg.log
+
+# ── Data hasil scan / export (bisa berisi data sensitif target) ──
+exports/
+
+# ── OS / editor ──
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── WSL / project lokal ──
+*.zip

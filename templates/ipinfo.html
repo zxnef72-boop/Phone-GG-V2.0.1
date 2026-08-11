@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}IP Geolocation — PhoneGG{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title"><span class="icon">📍</span> IP Geolocation & Info</div>
+    <div class="page-subtitle">ASN, ISP, proxy detection via ip-api + ipinfo.io</div>
+  </div>
+</div>
+<div class="card">
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">IP or Domain</label>
+      <input name="ip_target" class="form-input" placeholder="1.2.3.4 atau target.com" value="{{ ip_target or '' }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary" data-original-text="📍 Lookup">📍 Lookup</button>
+  </form>
+</div>
+{% if ip_error %}<div class="alert alert-error">{{ ip_error }}</div>{% endif %}
+{% if ip_result %}
+<div class="result-panel">
+  <div class="result-header"><h3>IP Info — {{ ip_result.target }}</h3></div>
+  <div class="result-body">
+    {% if ip_result.resolved_ips %}
+    <div class="alert alert-info">Resolved IPs: {{ ip_result.resolved_ips|join(', ') }}</div>
+    {% endif %}
+    {% for ip, sources in ip_result.sources.items() %}
+    <div class="card" style="margin-bottom:.75rem">
+      <div style="font-weight:700;color:var(--accent);margin-bottom:.5rem">{{ ip }}</div>
+      {% if sources.ip_api and sources.ip_api.status == 'success' %}
+      <div class="stat-grid">
+        <div class="stat-tile"><div class="value">{{ sources.ip_api.country }}</div><div class="label">Country</div></div>
+        <div class="stat-tile"><div class="value">{{ sources.ip_api.city }}</div><div class="label">City</div></div>
+        <div class="stat-tile"><div class="value">{{ sources.ip_api.isp }}</div><div class="label">ISP</div></div>
+        <div class="stat-tile"><div class="value">{{ sources.ip_api.as }}</div><div class="label">ASN</div></div>
+      </div>
+      <div class="checkbox-group" style="margin-top:.5rem">
+        {% if sources.ip_api.is_proxy %}<span class="badge badge-medium">Proxy</span>{% endif %}
+        {% if sources.ip_api.is_hosting %}<span class="badge badge-info">Hosting</span>{% endif %}
+        {% if sources.ip_api.is_mobile %}<span class="badge badge-found">Mobile</span>{% endif %}
+      </div>
+      {% else %}
+      <div class="alert alert-error">ip-api: {{ sources.ip_api.message if sources.ip_api else 'No data' }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

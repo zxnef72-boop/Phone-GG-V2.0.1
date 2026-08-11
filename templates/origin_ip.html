@@ -1,0 +1,136 @@
+﻿{% extends "base.html" %}
+{% block title %}Origin IP Finder — PhoneGG{% endblock %}
+{% block content %}
+<div class="module-page">
+  <div class="module-header">
+    <h1><i class="fa-solid fa-globe"></i> Origin IP Finder</h1>
+    <p>Find real origin IP addresses using DNS analysis and security APIs</p>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="POST">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <input type="text" name="target" class="form-control" placeholder="example.com or https://example.com" required>
+          </div>
+          <div class="col-md-4">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fa-solid fa-search me-2"></i>Find Origin IP
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if result %}
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fa-solid fa-server me-2"></i>Results for {{ result.target }}</h5>
+      <span class="badge bg-{% if result.confidence >= 0.7 %}success{% elif result.confidence >= 0.4 %}warning{% else %}secondary{% endif %}">
+        Confidence: {{ (result.confidence * 100)|int }}%
+      </span>
+    </div>
+    <div class="card-body">
+      
+      {% if result.cloudflare_detected %}
+      <div class="alert alert-info">
+        <i class="fa-solid fa-cloud me-2"></i>Cloudflare detected - using bypass techniques
+      </div>
+      {% endif %}
+
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <h6 class="text-muted mb-2">Origin IP Candidates</h6>
+          {% if result.origin_candidates %}
+          <div class="list-group">
+            {% for ip in result.origin_candidates %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <code>{{ ip }}</code>
+              <span class="badge bg-primary">Candidate</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted">No origin IPs found</p>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <h6 class="text-muted mb-2">Mail Server IPs</h6>
+          {% if result.mail_server_ips %}
+          <div class="list-group">
+            {% for ip in result.mail_server_ips %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <code>{{ ip }}</code>
+              <span class="badge bg-success">Mail Server</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted">No mail server IPs found</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <h6 class="text-muted mb-2">Findings by Source</h6>
+      {% if result.findings %}
+      <div class="table-responsive">
+        <table class="table table-dark table-sm">
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>IPs Found</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for finding in result.findings %}
+            <tr>
+              <td>{{ finding.source }}</td>
+              <td>{{ finding.ips|join(', ') }}</td>
+              <td>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-{% if finding.confidence >= 0.7 %}success{% elif finding.confidence >= 0.4 %}warning{% else %}secondary{% endif %}" style="width: {{ finding.confidence * 100 }}%"></div>
+                </div>
+                <small>{{ (finding.confidence * 100)|int }}%</small>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted">No findings available</p>
+      {% endif %}
+
+      <h6 class="text-muted mb-2 mt-4">DNS Records</h6>
+      <div class="accordion" id="dnsAccordion">
+        {% for record_type, records in result.dns_records.items() %}
+        {% if records %}
+        <div class="accordion-item bg-dark border-secondary">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ record_type }}">
+              {{ record_type }} Records ({{ records|length }})
+            </button>
+          </h2>
+          <div id="collapse{{ record_type }}" class="accordion-collapse collapse" data-bs-parent="#dnsAccordion">
+            <div class="accordion-body">
+              <ul class="list-unstyled mb-0">
+                {% for record in records %}
+                <li><code>{{ record }}</code></li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
