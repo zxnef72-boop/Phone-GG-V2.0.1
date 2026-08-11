@@ -117,4 +117,4 @@ Proyek ini lahir dari sebuah ketulusan untuk saling menjaga di ruang digital. Di
 
 Gunakan hanya pada target yang **kamu miliki izin resmi** untuk mengujinya. Penyalahgunaan alat ini di luar tanggung jawab pembuat.
 
-Semoga karya sederhana ini bisa menjadi tangan penolong dan bermanfaat bagi siapa saja yang membutuhkan.
+Semoga karya sederhana ini bisa menjadi tangan penolong dan bermanfaat bagi siapa saja yang membutuhkan.🙏
